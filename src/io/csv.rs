@@ -12,14 +12,15 @@ fn process_line(line: &str, delimiter: &str) -> Vec<f64> {
 }
 
 pub fn read_csv(filename: &str, delimiter: &str, skiprows: usize) -> Result<Vec<Vec<f64>>> {
-    let data = read_to_string(filename)?
-        .split("\n")
-        .enumerate()
-        .filter(|(i,_)| *i>=skiprows)
-        .map(|(_,l)| process_line(l, delimiter))
-        .filter(|data| !data.is_empty() )
-        .collect::<Vec<Vec<f64>>>();
-    Ok(data)
+    Ok(
+        read_to_string(filename)?
+            .split("\n")
+            .enumerate()
+            .filter(|(i,_)| *i>=skiprows)
+            .map(|(_,l)| process_line(l, delimiter))
+            .filter(|data| !data.is_empty() )
+            .collect()
+    )
 }
 
 
