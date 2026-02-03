@@ -3,6 +3,9 @@
 test colours='':
      cargo {{colours}} nextest run
 
+test-verbose colours='':
+     cargo {{colours}} nextest run --no-capture
+
 build:
     cargo build
 
