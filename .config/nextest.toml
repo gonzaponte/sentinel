@@ -1,0 +1,7 @@
+[profile.fast]
+default-filter = "not test(slow)"
+
+
+[profile.full]
+# Run everything
+#
