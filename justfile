@@ -1,10 +1,13 @@
 # -*-Makefile-*-
 
-test colours='':
-     cargo {{colours}} nextest run
+test:
+     cargo nextest run --profile fast
 
-test-verbose colours='':
-     cargo {{colours}} nextest run --no-capture
+verbose regexp:
+     cargo nextest run --no-capture --profile full -E "test({{regexp}})"
+
+test-slow:
+     cargo nextest run --release --profile full
 
 build:
     cargo build
