@@ -1,3 +1,4 @@
+pub mod configure;
 pub mod geometry;
 pub mod field;
 pub mod field_point;

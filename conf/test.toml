@@ -1,0 +1,8 @@
+rmin        =  1.0
+form_factor =  1.0
+zmin        =  0.0
+zmax        = 10.0
+
+field_file = "data/homogeneous_field.dat"
+
+t_step = 1e-4
