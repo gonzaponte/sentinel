@@ -49,7 +49,7 @@ impl Tracker {
         let field_dir   = closest.to_vec3(&pos);                           // direction set by e field
         let smeared_dir = self.randomize_direction(&closest, step_length); // diffusion smeared
 
-        let rot  = Rotation3::rotation_between(&(-Vector3::z()), &field_dir).unwrap_or(Rotation3::identity());
+        let rot  = Rotation3::rotation_between(&(Vector3::z()), &field_dir).unwrap_or(Rotation3::identity());
         let step = rot * smeared_dir;
 
         step
