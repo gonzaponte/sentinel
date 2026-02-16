@@ -31,6 +31,9 @@ struct CLI {
 
     #[arg(long, default_value_t=false)]
     overwrite: bool,
+
+    #[arg(short, long, default_value_t=10)]
+    threads: usize,
 }
 
 pub fn main() -> Result<()> {
@@ -41,7 +44,7 @@ pub fn main() -> Result<()> {
         return invalid_input!("Outfile already exists!");
     }
 
-    rayon::ThreadPoolBuilder::new().num_threads(10).build_global().unwrap();
+    rayon::ThreadPoolBuilder::new().num_threads(args.threads).build_global().unwrap();
 
     let header   = "x0 y0 z0 x1 y1 z1 t".split(" ")
                                         .map(|v| v.to_string())
