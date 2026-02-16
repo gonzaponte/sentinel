@@ -6,3 +6,6 @@ zmax        = 10.0
 field_file = "data/homogeneous_field.dat"
 
 t_step = 1e-4
+
+field_to_mm     = 1.0
+field_to_Vpercm = 1.0

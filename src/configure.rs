@@ -1,14 +1,17 @@
 use config::{Config, ConfigError, File};
 use serde::Deserialize;
 
+#[allow(non_snake_case)]
 #[derive(Debug, Deserialize, Clone)]
 pub struct Configure {
-    pub rmin       : f64,
-    pub form_factor: f64,
-    pub zmin       : f64,
-    pub zmax       : f64,
-    pub field_file : String,
-    pub t_step     : f64,
+    pub rmin           : f64,
+    pub form_factor    : f64,
+    pub zmin           : f64,
+    pub zmax           : f64,
+    pub field_file     : String,
+    pub field_to_mm    : f64,
+    pub field_to_Vpercm: f64,
+    pub t_step         : f64,
 }
 
 impl Configure {
@@ -27,14 +30,19 @@ impl Configure {
 mod tests {
     use super::*;
     use float_eq::assert_float_eq;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_new() {
         let c = Configure::new("conf/test.toml").unwrap();
-        assert_float_eq!(c.rmin       ,  1.0, ulps<=2);
-        assert_float_eq!(c.form_factor,  1.0, ulps<=2);
-        assert_float_eq!(c.zmin       ,  0.0, ulps<=2);
-        assert_float_eq!(c.zmax       , 10.0, ulps<=2);
+        assert_float_eq!(c.rmin           ,  1.0, ulps<=2);
+        assert_float_eq!(c.form_factor    ,  1.0, ulps<=2);
+        assert_eq!      (c.field_file     , "data/homogeneous_field.dat");
+        assert_float_eq!(c.field_to_mm    ,  1.0, ulps<=2);
+        assert_float_eq!(c.field_to_Vpercm,  1.0, ulps<=2);
+        assert_float_eq!(c.zmin           ,  0.0, ulps<=2);
+        assert_float_eq!(c.zmax           , 10.0, ulps<=2);
+        assert_float_eq!(c.t_step         , 1e-4, ulps<=2);
     }
 
     #[test]
