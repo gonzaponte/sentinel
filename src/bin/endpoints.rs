@@ -97,9 +97,9 @@ mod tests {
 
     fn homogeneous_field() -> Field {
         let points   = vec![
-            FieldPoint::new(Point2::<f64>::new(0., 11.), 1., 0, Vector2::new(0., -1.)), // startpoint
-            FieldPoint::new(Point2::<f64>::new(0.,  1.), 1., 0, Vector2::new(0., -1.)), //
-            FieldPoint::new(Point2::<f64>::new(0.,  0.), 1., 0, Vector2::zeros()     ), //   endpoint
+            FieldPoint::new(Point2::<f64>::new(0., 11.), 1e3, 0, Vector2::new(0., -1.)), // startpoint
+            FieldPoint::new(Point2::<f64>::new(0.,  1.), 1e3, 0, Vector2::new(0., -1.)), //
+            FieldPoint::new(Point2::<f64>::new(0.,  0.), 1e3, 0, Vector2::zeros()     ), //   endpoint
         ];
         Field::new(points)
     }
