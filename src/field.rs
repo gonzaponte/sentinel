@@ -23,7 +23,8 @@ impl DerefMut for Field {
 
 
 impl Field {
-    pub fn from_file(filename: &str) -> Self {
+    #[allow(non_snake_case)]
+    pub fn from_file(filename: &str, to_mm: f64, to_Vpercm: f64) -> Self {
         let data = read_csv(filename, " ", 8).expect("Could not read field file");
 
         let mut previous_pos  = Point2::<f64>::origin();
@@ -31,6 +32,7 @@ impl Field {
 
         let points = data.into_iter()
                          .rev()
+                         .map(|row| vec![row[0] * to_mm, row[1] * to_mm, row[2], row[3] * to_Vpercm])
                          .filter_map(|row| FieldPoint::from_csv_row(row, &mut previous_pos, &mut current_line))
                          .collect();
 
@@ -71,7 +73,7 @@ mod tests {
         writeln!(file, "1.2 -14.5 6 7.89").unwrap();       // repeat the same values
         writeln!(file, "1.2  -4.5 6 7.89").unwrap();       // the actual rows
 
-        let field = Field::from_file(file.path().to_str().unwrap());
+        let field = Field::from_file(file.path().to_str().unwrap(), 1., 1.);
 
         assert_eq!(field.len(), 2); // first one is skipped for being the end of the line
 

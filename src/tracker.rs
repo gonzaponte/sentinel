@@ -91,7 +91,7 @@ mod tests {
     use float_eq::assert_float_eq;
 
     fn default_geometry() -> Geometry { Geometry::new(1., 1., 0., 1.) }
-    fn default_field   () -> Field    { Field::from_file("data/partial_efield.dat") }
+    fn default_field   () -> Field    { Field::from_file("data/partial_efield.dat", 1., 1.) }
     fn default_tracker () -> Tracker  { Tracker ::new(default_field(), default_geometry(), 1.) }
 
     #[test]
