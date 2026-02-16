@@ -65,7 +65,7 @@ impl Tracker {
         let smeary = random::normal(0., sigmat);
         let smearz = random::normal(0., sigmal);
 
-        Vector3::new(smearx, smeary, -step_length + smearz) // - sign important to go upwards!!!
+        Vector3::new(smearx, smeary, step_length + smearz) // step_length positive to go upwards!!!
     }
 
     fn drift_velocity(&self, edrift: f64) -> f64 {
