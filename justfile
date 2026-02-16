@@ -15,8 +15,8 @@ build:
 clean:
     cargo clean
 
-debug *args:
-    cargo run           --bin sentinel -- {{args}}
+debug bin *args:
+    cargo run           --bin {{bin}} -- {{args}}
 
-release *args:
-    cargo run --release --bin sentinel -- {{args}}
+release bin *args:
+    cargo run --release --bin {{bin}} -- {{args}}
