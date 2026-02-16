@@ -63,6 +63,7 @@ pub fn main() -> Result<()> {
         ).unwrap()
          .progress_chars("█▉▊▋▌▍▎▏ ") // other: "█▓░" "█▇▆▅▄▃▂▁ "
     );
+    pb.reset(); // force drawing
     for batch in 0..nbatch {
         let data : Vec<Vec<Vec<f64>>> =
         (0..args.batch_size).into_par_iter()
