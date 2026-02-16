@@ -17,13 +17,19 @@ pub struct Tracker {
 
 impl Tracker {
     pub fn new(field: Field, geometry: Geometry, tstep: f64) -> Self {
-        let data    = read_csv("data/drift_velocity_gushchin.dat", ";", 1).unwrap();
-        let drift_e = data.iter().map(|x| *x.first().unwrap()).collect::<Vec<f64>>(); // drift field
-        let drift_v = data.iter().map(|x| *x. last().unwrap()).collect::<Vec<f64>>(); // drift velocity
+        let data        = read_csv("data/drift_velocity_gushchin.dat", ";", 1).unwrap();
+        let mut drift_e = data.iter().map(|x| *x.first().unwrap()).collect::<Vec<f64>>(); // drift field
+        let mut drift_v = data.iter().map(|x| *x. last().unwrap()).collect::<Vec<f64>>(); // drift velocity
+
+        // Extra points to avoid going under/over interpolation range
+        drift_e.insert(0, 0f64);
+        drift_v.insert(0, 0f64);
+        drift_e.push(1e6);
+        drift_v.push(*drift_v.last().unwrap());
 
         Self{ field
             , geometry
-            , drift     : (drift_e, drift_v)
+            , drift : (drift_e, drift_v)
             , tstep
             }
     }
