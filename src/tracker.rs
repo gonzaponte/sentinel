@@ -89,10 +89,18 @@ impl Tracker {
 mod tests {
     use super::*;
     use float_eq::assert_float_eq;
+    use nalgebra::{Point2, Vector2};
 
-    fn default_geometry() -> Geometry { Geometry::new(1., 1., 0., 1.) }
-    fn default_field   () -> Field    { Field::from_file("data/partial_efield.dat", 1., 1.) }
-    fn default_tracker () -> Tracker  { Tracker ::new(default_field(), default_geometry(), 1.) }
+    fn homogeneous_field() -> Field {
+        let points   = vec![
+            FieldPoint::new(Point2::<f64>::new(0., 11.), 1e3, 0, Vector2::new(0., -1.)), // startpoint
+            FieldPoint::new(Point2::<f64>::new(0.,  1.), 1e3, 0, Vector2::new(0., -1.)), //
+            FieldPoint::new(Point2::<f64>::new(0.,  0.), 1e3, 0, Vector2::zeros()     ), //   endpoint
+        ];
+        Field::new(points)
+    }
+    fn default_geometry() -> Geometry { Geometry::new(1., 1., 0., 10.) }
+    fn default_tracker () -> Tracker  { Tracker ::new(homogeneous_field(), default_geometry(), 1.) }
 
     #[test]
     fn test_tracker_new() {
@@ -107,5 +115,22 @@ mod tests {
         assert_float_eq!(tracker.drift_velocity( 100.), 1.4938051013386355, rel <= 1e-7);
         assert_float_eq!(tracker.drift_velocity(1000.), 2.2215991423542030, rel <= 1e-7);
         assert_float_eq!(tracker.drift_velocity(2000.), 2.5070676356146624, rel <= 1e-7);
+    }
+
+    #[test]
+    fn test_propagate() {
+        let tracker  = Tracker::new(homogeneous_field(), default_geometry(), 1e-2);
+        let t = tracker.propagate_from(Point3::new(0., 0., -9.));
+        assert!(t.len() > 100, "Track length too short: {}", t.len());
+        assert!(t.last().unwrap().z > -2e-2); // close to zmin
+    }
+
+    #[test]
+    fn test_propagate_slow() {
+        let tracker  = Tracker::new(homogeneous_field(), default_geometry(), 5e-4);
+        let t = tracker.propagate_from(Point3::new(0., 0., -9.));
+
+        assert!(t.len() > 1000, "Track length too short: {}", t.len());
+        assert!(t.last().unwrap().z > -1e-3); // close to zmin
     }
 }
