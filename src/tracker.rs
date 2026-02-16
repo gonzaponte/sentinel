@@ -104,8 +104,8 @@ mod tests {
     #[test]
     fn test_drift_velocity() {
         let tracker = default_tracker();
-        assert_float_eq!(tracker.drift_velocity(0.1), 1.4938051013386355, rel <= 1e-7);
-        assert_float_eq!(tracker.drift_velocity(1.0), 2.2215991423542030, rel <= 1e-7);
-        assert_float_eq!(tracker.drift_velocity(2.0), 2.5070676356146624, rel <= 1e-7);
+        assert_float_eq!(tracker.drift_velocity( 100.), 1.4938051013386355, rel <= 1e-7);
+        assert_float_eq!(tracker.drift_velocity(1000.), 2.2215991423542030, rel <= 1e-7);
+        assert_float_eq!(tracker.drift_velocity(2000.), 2.5070676356146624, rel <= 1e-7);
     }
 }
