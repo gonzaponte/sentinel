@@ -1,0 +1,11 @@
+rmin        =  16.0
+form_factor =   1.0
+zmin        =   0.0
+zmax        = 120.0
+
+field_file = "/home/gonzalo/data/COLINA/pCOLINA_triangular_efield_ring_degrad_4.5_form_factor_1.txt"
+
+t_step = 1e-4
+
+field_to_mm     = 1e3
+field_to_Vpercm = 0.01
