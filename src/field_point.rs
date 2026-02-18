@@ -104,7 +104,7 @@ mod tests {
         let dir = Vector2::new(0., 1.);
         let fp  = FieldPoint::new(Point2::origin(), 0., 0, dir);
 
-        let pos      = Point3::new(1., 1., 1.);
+        let pos      = Point3::new(1., 2., 3.);
         let new_dir  = fp.to_vec3(&pos);
         let expected = Vector3::z();
         assert_vector3_eq!(new_dir, expected, ulps <= 2);
@@ -115,7 +115,19 @@ mod tests {
         let dir = Vector2::new(1., 0.);
         let fp  = FieldPoint::new(Point2::origin(), 0., 0, dir);
 
-        let pos      = Point3::new(1., 1., 1.);
+        let pos      = Point3::new(1., 1., 2.);
+        let new_dir  = fp.to_vec3(&pos);
+        let expected = Vector3::new(1., 1., 0.).normalize();
+        assert_vector3_eq!(new_dir, expected, ulps <= 2);
+    }
+
+
+    #[test]
+    fn test_to_vec3_minus_r() {
+        let dir = Vector2::new(-1., 0.);
+        let fp  = FieldPoint::new(Point2::origin(), 0., 0, dir);
+
+        let pos      = Point3::new(-1., -1., 2.);
         let new_dir  = fp.to_vec3(&pos);
         let expected = Vector3::new(1., 1., 0.).normalize();
         assert_vector3_eq!(new_dir, expected, ulps <= 2);
