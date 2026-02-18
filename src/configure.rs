@@ -39,7 +39,7 @@ mod tests {
         assert_float_eq!(c.form_factor    ,  1.0, ulps<=2);
         assert_eq!      (c.field_file     , "data/homogeneous_field.dat");
         assert_float_eq!(c.field_to_mm    ,  1.0, ulps<=2);
-        assert_float_eq!(c.field_to_Vpercm,  1.0, ulps<=2);
+        assert_float_eq!(c.field_to_Vpercm,  1e3, ulps<=2);
         assert_float_eq!(c.zmin           ,  0.0, ulps<=2);
         assert_float_eq!(c.zmax           , 10.0, ulps<=2);
         assert_float_eq!(c.t_step         , 1e-4, ulps<=2);
