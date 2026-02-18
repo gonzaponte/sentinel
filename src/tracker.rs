@@ -7,16 +7,16 @@ use crate::field::Field;
 use crate::field_point::FieldPoint;
 use crate::random;
 
-#[derive(Clone, Debug)]
-pub struct Tracker {
+#[derive(Debug)]
+pub struct Tracker<G: Geometry> {
     field     : Field,
-    geometry  : Geometry,
+    geometry  : G,
     drift     : (Vec<f64>, Vec<f64>),
     tstep     : f64
 }
 
-impl Tracker {
-    pub fn new(field: Field, geometry: Geometry, tstep: f64) -> Self {
+impl<G: Geometry> Tracker<G> {
+    pub fn new(field: Field, geometry: G, tstep: f64) -> Self {
         let data        = read_csv("data/drift_velocity_gushchin.dat", ";", 1).unwrap();
         let mut drift_e = data.iter().map(|x| *x.first().unwrap()).collect::<Vec<f64>>(); // drift field
         let mut drift_v = data.iter().map(|x| *x. last().unwrap()).collect::<Vec<f64>>(); // drift velocity
@@ -96,6 +96,7 @@ mod tests {
     use super::*;
     use float_eq::assert_float_eq;
     use nalgebra::{Point2, Vector2};
+    use crate::geometry::Cone;
 
     fn homogeneous_field() -> Field {
         let points   = vec![
@@ -105,8 +106,8 @@ mod tests {
         ];
         Field::new(points)
     }
-    fn default_geometry() -> Geometry { Geometry::new(1., 1., 0., 10.) }
-    fn default_tracker () -> Tracker  { Tracker ::new(homogeneous_field(), default_geometry(), 1.) }
+    fn default_geometry() -> Cone          { Cone::new(1., 1., 0., 10.) }
+    fn default_tracker () -> Tracker<Cone> { Tracker ::new(homogeneous_field(), default_geometry(), 1.) }
 
     #[test]
     fn test_tracker_new() {
