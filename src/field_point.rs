@@ -34,7 +34,7 @@ impl FieldPoint {
     }
 
     pub fn to_vec3(&self, p: &Point3<f64>) -> Vector3<f64> {
-        let alpha = (p.y/p.x).atan();
+        let alpha = p.y.atan2(p.x + f64::EPSILON);
         Vector3::new( self.dir.x * alpha.cos()
                     , self.dir.x * alpha.sin()
                     , self.dir.y)
