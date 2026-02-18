@@ -1,22 +1,26 @@
 use nalgebra::Point3;
 
+use derive_new::new;
+
 pub trait Geometry {
     fn is_within(&self, pos: &Point3<f64>) -> bool;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, new)]
 pub struct Cone {
     pub rmin       : f64,
     pub form_factor: f64,
     pub zmin       : f64,
     pub zmax       : f64,
-    pub rmax       : f64,
 }
 
 impl Cone {
-    pub fn new(rmin: f64, form_factor: f64, zmin: f64, zmax: f64) -> Self {
-        let rmax = rmin + form_factor * zmax;
-        Self{ rmin, form_factor, zmin, zmax, rmax }
+    pub fn rmax(&self) -> f64 {
+        self.r_at_z(self.zmax)
+    }
+
+    pub fn r_at_z(&self, z: f64) -> f64 {
+        self.rmin + self.form_factor * (z - self.zmin)
     }
 }
 
@@ -27,8 +31,7 @@ impl Geometry for Cone {
         if z > self.zmax { return false; }
 
         let r = (pos.x.powi(2) + pos.y.powi(2)).sqrt();
-        let rmax_at_z = self.rmin + self.form_factor * z;
-        r < rmax_at_z
+        r < self.r_at_z(z)
     }
 }
 
@@ -36,6 +39,18 @@ impl Geometry for Cone {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_r_at_z() {
+        let geo = Cone::new(1., 2., 3., 4.);
+
+        let range = geo.rmin .. (geo.rmin) + 2.;
+        for i in 0..100 {
+            let zi = geo.zmin + (i as f64) / 100f64;
+            let ri = geo.r_at_z(zi);
+            assert!(range.contains(&ri));
+        }
+    }
 
     #[test]
     fn test_cone_is_within() {
@@ -56,4 +71,5 @@ mod tests {
         assert!( geo.is_within(&p4) );
         assert!(!geo.is_within(&p5) );
     }
+
 }
