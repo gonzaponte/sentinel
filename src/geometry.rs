@@ -1,7 +1,11 @@
 use nalgebra::Point3;
 
+pub trait Geometry {
+    fn is_within(&self, pos: &Point3<f64>) -> bool;
+}
+
 #[derive(Clone, Debug)]
-pub struct Geometry {
+pub struct Cone {
     pub rmin       : f64,
     pub form_factor: f64,
     pub zmin       : f64,
@@ -9,13 +13,15 @@ pub struct Geometry {
     pub rmax       : f64,
 }
 
-impl Geometry {
+impl Cone {
     pub fn new(rmin: f64, form_factor: f64, zmin: f64, zmax: f64) -> Self {
         let rmax = rmin + form_factor * zmax;
         Self{ rmin, form_factor, zmin, zmax, rmax }
     }
+}
 
-    pub fn is_within(&self, pos: &Point3<f64>) -> bool {
+impl Geometry for Cone {
+    fn is_within(&self, pos: &Point3<f64>) -> bool {
         let z =  -pos.z;
         if z < self.zmin { return false; }
         if z > self.zmax { return false; }
@@ -32,8 +38,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_is_within() {
-        let geo = Geometry::new(1., 1., 0., 10.);
+    fn test_cone_is_within() {
+        let geo = Cone::new(1., 1., 0., 10.);
 
         // z values are negative, despite the geometry being defined as positive
         let p0 = Point3::<f64>::new(0., 0.,  0.); // in
