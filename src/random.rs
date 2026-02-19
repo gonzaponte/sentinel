@@ -4,6 +4,10 @@ use nalgebra::Point3;
 use rand::{random, rng};
 use rand_distr::{Distribution, Normal};
 
+pub fn sample() -> f64 {
+    random::<f64>()
+}
+
 pub fn uniform(low: f64, upp: f64) -> f64 {
     low + random::<f64>() * (upp - low)
 }
@@ -25,10 +29,22 @@ pub fn in_cone(r_min: f64, form_factor: f64, z_max: f64) -> Point3<f64> {
     Point3::new(x, y, z)
 }
 
+pub fn choice<'a, T>(values: &'a Vec<T>, probs: &Vec<f64>) -> &'a T {
+    // probs are assumed to be cumulatively normalized
+    let r = sample();
+    for (v, p) in values.iter().zip(probs.iter()) {
+        if r < *p {
+            return v;
+        }
+    }
+    panic!("[random::choice] probabilities are not cumulatively normalized");
+}
+
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_uniform_within_range() {
@@ -129,5 +145,52 @@ mod tests {
             if r <= z {n_in += 1}
         }
         assert!(n_in < 1000);
+    }
+
+    #[test]
+    fn test_choice_exclusive() {
+        let values = vec![-1, 2, i32::MIN];
+        let probs  = vec![1., 0., 0.];
+        for _ in 0..1000 {
+            let c = choice(&values, &probs);
+            assert_eq!(*c, -1);
+        }
+
+        let values = vec![-1, 2, i32::MIN];
+        let probs  = vec![0., 1., 0.];
+        for _ in 0..1000 {
+            let c = choice(&values, &probs);
+            assert_eq!(*c, 2);
+        }
+
+        let values = vec![-1, 2, i32::MIN];
+        let probs  = vec![0., 0., 1.];
+        for _ in 0..1000 {
+            let c = choice(&values, &probs);
+            assert_eq!(*c, i32::MIN);
+        }
+    }
+
+    #[test]
+    fn test_choice_combined() {
+        let values = vec![0, 1, 2];
+        let probs  = vec![0.1, 0.4, 1.0];
+        let mut counts = vec![0, 0, 0];
+        for _ in 0..1000 {
+            let c = choice(&values, &probs);
+            counts[*c] += 1;
+        }
+        assert!(counts[1] > counts[0]);
+        assert!(counts[2] > counts[1]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_choice_panics() {
+        let values = vec![0, 1, 2];
+        let probs  = vec![0.1, 0.2, 0.3];
+        for _ in 0..100 {
+            choice(&values, &probs);
+        }
     }
 }
