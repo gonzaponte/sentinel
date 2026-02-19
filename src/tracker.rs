@@ -106,7 +106,7 @@ mod tests {
         ];
         Field::new(points)
     }
-    fn default_geometry() -> Cone          { Cone::new(1., 1., 0., 10.) }
+    fn default_geometry() -> Cone          { Cone::new(1., 1., 10.) }
     fn default_tracker () -> Tracker<Cone> { Tracker ::new(homogeneous_field(), default_geometry(), 1.) }
 
     #[test]
@@ -129,7 +129,7 @@ mod tests {
         let tracker  = Tracker::new(homogeneous_field(), default_geometry(), 1e-2);
         let t = tracker.propagate_from(Point3::new(0., 0., -9.));
         assert!(t.len() > 100, "Track length too short: {}", t.len());
-        assert!(t.last().unwrap().z > -2e-2); // close to zmin
+        assert!(t.last().unwrap().z > -2e-2); // close to exit
     }
 
     #[test]
@@ -138,6 +138,6 @@ mod tests {
         let t = tracker.propagate_from(Point3::new(0., 0., -9.));
 
         assert!(t.len() > 1000, "Track length too short: {}", t.len());
-        assert!(t.last().unwrap().z > -1e-3); // close to zmin
+        assert!(t.last().unwrap().z > -1e-3); // close to exit
     }
 }

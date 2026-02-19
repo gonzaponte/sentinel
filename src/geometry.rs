@@ -10,7 +10,6 @@ pub trait Geometry {
 pub struct Cone {
     pub rmin       : f64,
     pub form_factor: f64,
-    pub zmin       : f64,
     pub zmax       : f64,
 }
 
@@ -20,14 +19,14 @@ impl Cone {
     }
 
     pub fn r_at_z(&self, z: f64) -> f64 {
-        self.rmin + self.form_factor * (z - self.zmin)
+        self.rmin + self.form_factor * z
     }
 }
 
 impl Geometry for Cone {
     fn is_within(&self, pos: &Point3<f64>) -> bool {
         let z =  -pos.z;
-        if z < self.zmin { return false; }
+        if z < 0.0       { return false; }
         if z > self.zmax { return false; }
 
         let r = (pos.x.powi(2) + pos.y.powi(2)).sqrt();
@@ -42,11 +41,11 @@ mod tests {
 
     #[test]
     fn test_r_at_z() {
-        let geo = Cone::new(1., 2., 3., 4.);
+        let geo = Cone::new(1., 2., 4.);
 
         let range = geo.rmin .. (geo.rmin) + 2.;
         for i in 0..100 {
-            let zi = geo.zmin + (i as f64) / 100f64;
+            let zi = (i as f64) / 100f64;
             let ri = geo.r_at_z(zi);
             assert!(range.contains(&ri));
         }
@@ -54,7 +53,7 @@ mod tests {
 
     #[test]
     fn test_cone_is_within() {
-        let geo = Cone::new(1., 1., 0., 10.);
+        let geo = Cone::new(1., 1., 10.);
 
         // z values are negative, despite the geometry being defined as positive
         let p0 = Point3::<f64>::new(0., 0.,  0.); // in

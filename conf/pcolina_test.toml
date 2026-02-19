@@ -1,6 +1,5 @@
 rmin        =  16.0
 form_factor =   1.0
-zmin        =   0.0
 zmax        = 120.0
 
 field_file = "/home/gonzalo/data/COLINA/pCOLINA_triangular_efield_ring_degrad_4.5_form_factor_1.txt"
