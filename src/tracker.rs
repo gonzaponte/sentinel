@@ -55,7 +55,7 @@ impl<G: Geometry> Tracker<G> {
         let field_dir   = closest.to_vec3(&pos);                           // direction set by e field
         let smeared_dir = self.randomize_direction(&closest, step_length); // diffusion smeared
 
-        let rot  = Rotation3::rotation_between(&(Vector3::z()), &field_dir).unwrap_or(Rotation3::identity());
+        let rot = Rotation3::face_towards(&field_dir, &Vector3::y());
         let step = rot * smeared_dir;
 
         step
@@ -71,7 +71,7 @@ impl<G: Geometry> Tracker<G> {
         let smeary = random::normal(0., sigmat);
         let smearz = random::normal(0., sigmal);
 
-        Vector3::new(smearx, smeary, step_length + smearz) // step_length positive to go upwards!!!
+        Vector3::new(smearx, smeary, step_length + smearz)
     }
 
     fn drift_velocity(&self, edrift: f64) -> f64 {
