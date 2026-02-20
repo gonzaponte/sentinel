@@ -25,12 +25,11 @@ impl Cone {
 
 impl Geometry for Cone {
     fn is_within(&self, pos: &Point3<f64>) -> bool {
-        let z =  -pos.z;
-        if z < 0.0       { return false; }
-        if z > self.zmax { return false; }
+        if pos.z < 0.0       { return false; }
+        if pos.z > self.zmax { return false; }
 
         let r = (pos.x.powi(2) + pos.y.powi(2)).sqrt();
-        r < self.r_at_z(z)
+        r < self.r_at_z(pos.z)
     }
 }
 
@@ -56,12 +55,12 @@ mod tests {
         let geo = Cone::new(1., 1., 10.);
 
         // z values are negative, despite the geometry being defined as positive
-        let p0 = Point3::<f64>::new(0., 0.,  0.); // in
-        let p1 = Point3::<f64>::new(2., 0.,  0.); // out
-        let p2 = Point3::<f64>::new(1., 0., -1.); // in
-        let p3 = Point3::<f64>::new(4., 0., -1.); // out
-        let p4 = Point3::<f64>::new(6., 0., -7.); // in
-        let p5 = Point3::<f64>::new(8., 0., -7.); // out
+        let p0 = Point3::<f64>::new(0., 0., 0.); // in
+        let p1 = Point3::<f64>::new(2., 0., 0.); // out
+        let p2 = Point3::<f64>::new(1., 0., 1.); // in
+        let p3 = Point3::<f64>::new(4., 0., 1.); // out
+        let p4 = Point3::<f64>::new(6., 0., 7.); // in
+        let p5 = Point3::<f64>::new(8., 0., 7.); // out
 
         assert!( geo.is_within(&p0) );
         assert!(!geo.is_within(&p1) );
