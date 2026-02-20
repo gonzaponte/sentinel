@@ -51,8 +51,8 @@ pub fn main() -> Result<()> {
                                   .collect::<Vec<String>>();
     let mut writer = CsvWriter::new(&path.to_str().unwrap(), " ", header).unwrap();
     let geometry   = Cone::new(conf.rmin, conf.form_factor, conf.zmax);
-    let field      = Field::from_file(&conf.field_file, conf.field_to_mm, conf.field_to_Vpercm);
     let tracker    = Tracker::new(field, geometry, conf.t_step);
+    let field      = Field::from_file(&conf.field_file, conf.field_to_mm, conf.field_to_Vpercm, true);
 
     let nbatch = args.n_events.div_ceil(args.batch_size);
     let pb = ProgressBar::new(nbatch as u64);

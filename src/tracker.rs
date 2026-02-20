@@ -125,19 +125,19 @@ mod tests {
     }
 
     #[test]
-    fn test_propagate() {
+    fn test_propagate_thisone() {
         let tracker  = Tracker::new(homogeneous_field(), default_geometry(), 1e-2);
-        let t = tracker.propagate_from(Point3::new(0., 0., -9.));
+        let t = tracker.propagate_from(Point3::new(0., 0., 9.));
         assert!(t.len() > 100, "Track length too short: {}", t.len());
-        assert!(t.last().unwrap().z > -2e-2); // close to exit
+        assert!(t.last().unwrap().z < 2e-2); // close to exit
     }
 
     #[test]
     fn test_propagate_slow() {
         let tracker  = Tracker::new(homogeneous_field(), default_geometry(), 5e-4);
-        let t = tracker.propagate_from(Point3::new(0., 0., -9.));
+        let t = tracker.propagate_from(Point3::new(0., 0., 9.));
 
         assert!(t.len() > 1000, "Track length too short: {}", t.len());
-        assert!(t.last().unwrap().z > -1e-3); // close to exit
+        assert!(t.last().unwrap().z < 1e-3); // close to exit
     }
 }

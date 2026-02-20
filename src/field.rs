@@ -24,15 +24,20 @@ impl DerefMut for Field {
 
 impl Field {
     #[allow(non_snake_case)]
-    pub fn from_file(filename: &str, to_mm: f64, to_Vpercm: f64) -> Self {
+    pub fn from_file(filename: &str, to_mm: f64, to_Vpercm: f64, invert_z: bool) -> Self {
         let data = read_csv(filename, " ", 8).expect("Could not read field file");
 
         let mut previous_pos  = Point2::<f64>::origin();
         let mut  current_line = 999_999_999_999_999usize;
 
+        let sign   = if invert_z {-1.0} else {1.0};
         let points = data.into_iter()
                          .rev()
-                         .map(|row| vec![row[0] * to_mm, row[1] * to_mm, row[2], row[3] * to_Vpercm])
+                         .map(|row| vec![ row[0] * to_mm
+                                        , row[1] * to_mm * sign
+                                        , row[2]
+                                        , row[3] * to_Vpercm
+                                        ])
                          .filter_map(|row| FieldPoint::from_csv_row(row, &mut previous_pos, &mut current_line))
                          .collect();
 
@@ -73,13 +78,13 @@ mod tests {
         writeln!(file, "1.2 -14.5 6 7.89").unwrap();       // repeat the same values
         writeln!(file, "1.2  -4.5 6 7.89").unwrap();       // the actual rows
 
-        let field = Field::from_file(file.path().to_str().unwrap(), 1., 1.);
+        let field = Field::from_file(file.path().to_str().unwrap(), 1., 1., true);
 
         assert_eq!(field.len(), 2); // first one is skipped for being the end of the line
 
-        let dir = Vector2::new(0.0, 1.0);
+        let dir = Vector2::new(0.0, -1.0);
         for (i, fp) in field.iter().enumerate() {
-            let z = -14.5 - (10*i) as f64;
+            let z = 14.5 + (10*i) as f64;
             assert_float_eq!  (fp.r(),  1.2, ulps <= 2);
             assert_float_eq!  (fp.z(),    z, ulps <= 2);
             assert_float_eq!  (fp.mag, 7.89, ulps <= 2);
