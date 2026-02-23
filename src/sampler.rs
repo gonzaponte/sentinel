@@ -6,7 +6,7 @@ use float_eq::float_eq;
 
 use std::f64::consts::{PI, TAU};
 
-pub trait Sampler<G: Geometry> {
+pub trait Sampler<G: Geometry>: Send + Sync {
     fn sample(&self, geometry: &G) -> Point3<f64>;
 }
 
