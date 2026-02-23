@@ -1,8 +1,11 @@
+use std::cell::RefCell;
 use std::fs::{File, read_to_string};
 use std::io::{Result, Write};
 use std::fmt;
 
 use crate::invalid_input;
+use crate::io::Writer;
+use crate::io::hdf5_types::{Endpoint, TrajectoryPoint};
 
 fn process_line(line: &str, delimiter: &str) -> Vec<f64> {
     line.trim()
@@ -28,34 +31,52 @@ pub fn read_csv(filename: &str, delimiter: &str, skiprows: usize) -> Result<Vec<
 
 
 pub struct CsvWriter {
-    file: File,
+    file     : RefCell<File>,
     delimiter: String,
-    ncols: usize,
+    ncols    : usize,
 }
 
 impl CsvWriter {
     pub fn new(filename: &str, delimiter: &str, header: Vec<String>) -> Result<Self> {
-        let delimiter  = delimiter.to_string() + " ";
-        let file       = File::create(filename)?;
-        let mut writer = CsvWriter{file, delimiter, ncols: header.len()};
+        let delimiter = delimiter.to_string() + " ";
+        let file      = File::create(filename)?;
+        let file      = RefCell::new(file);
+        let writer    = CsvWriter{file, delimiter, ncols: header.len()};
 
         writer.write(header)?;
         Ok(writer)
     }
 
-    pub fn write<T: fmt::Display> (&mut self, values: Vec<T>) -> Result<usize> {
+    pub fn write<T: fmt::Display> (&self, values: Vec<T>) -> Result<usize> {
         if values.len() != self.ncols {
             return invalid_input!("Unexpected number of columns");
         }
         let values = values.into_iter().map(|v| format!("{}", v)).collect::<Vec<_>>();
         let line   = values.join(&self.delimiter) + "\n";
-        self.file.write(line.as_bytes())
+        self.file.borrow_mut().write(line.as_bytes())
+    }
+}
+
+impl Writer<Endpoint> for CsvWriter {
+    fn write(&self, ep: Endpoint) -> Result<()> {
+        self.write(vec![ ep.event as f32
+                       , ep.x0, ep.y0, ep.z0
+                       , ep.x1, ep.y1, ep.z1
+                       , ep.t])
+            .map(|_| ())
+    }
+}
+
+impl Writer<TrajectoryPoint> for CsvWriter {
+    fn write(&self, tp: TrajectoryPoint) -> Result<()> {
+        self.write(vec![tp.event as f32, tp.x, tp.y, tp.z, tp.t])
+            .map(|_| ())
     }
 }
 
 impl Drop for CsvWriter {
     fn drop(&mut self) {
-        self.file.flush().unwrap();
+        self.file.borrow_mut().flush().unwrap();
     }
 }
 
@@ -170,7 +191,7 @@ mod tests {
     #[test]
     fn test_csv_writer_write_ok() {
         let (_dir, filename) = tempfile("test_csv_writer_write_ok");
-        let mut writer       = CsvWriter::new( &filename
+        let writer           = CsvWriter::new( &filename
                                              , " "
                                              , vec!["a".to_string(), "b".to_string()]
                                              ).unwrap();
@@ -186,7 +207,7 @@ mod tests {
     #[test]
     fn test_csv_writer_write_err() {
         let (_dir, filename) = tempfile("test_csv_writer_write_ok");
-        let mut writer       = CsvWriter::new( &filename
+        let writer           = CsvWriter::new( &filename
                                              , " "
                                              , vec!["a".to_string(), "b".to_string()]
                                              ).unwrap();
