@@ -4,6 +4,7 @@ use derive_new::new;
 
 pub trait Geometry {
     fn is_within(&self, pos: &Point3<f64>) -> bool;
+    fn cathode_z(&self) -> f64;
 }
 
 #[derive(Clone, Debug, new)]
@@ -30,6 +31,10 @@ impl Geometry for Cone {
 
         let r = (pos.x.powi(2) + pos.y.powi(2)).sqrt();
         r < self.r_at_z(pos.z)
+    }
+
+    fn cathode_z(&self) -> f64 {
+        self.zmax
     }
 }
 
