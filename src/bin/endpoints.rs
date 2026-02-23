@@ -2,7 +2,6 @@ use std::io:: Result;
 use std::path::Path;
 
 use clap::Parser;
-use nalgebra::Point3;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 
@@ -52,7 +51,8 @@ pub fn main() -> Result<()> {
     let mut writer = CsvWriter::new(&path.to_str().unwrap(), " ", header).unwrap();
     let geometry   = Cone::new(conf.rmin, conf.form_factor, conf.zmax);
     let field      = Field::from_file(&conf.field_file, conf.field_to_mm, conf.field_to_Vpercm, true);
-    let tracker    = Tracker::new(field, geometry, conf.t_step);
+    let tracker    = Tracker::new(field, geometry.clone(), conf.t_step);
+    let sampler    = conf.generator.sampler(&geometry);
 
     let nbatch = args.n_events.div_ceil(args.batch_size);
     let pb = ProgressBar::new(nbatch as u64);
@@ -71,12 +71,15 @@ pub fn main() -> Result<()> {
         let data : Vec<Vec<f64>> =
         (0..args.batch_size).into_par_iter()
                             .map( |_| {
-                                let (x0, y0, z0) = (0., 0., -9.);
-                                let trajectory = tracker.propagate_from(Point3::new(x0, y0, z0));
+                                let starting_pos = sampler.sample(&geometry);
+                                let trajectory = tracker.propagate_from(starting_pos.clone());
                                 let last = trajectory.last().unwrap();
                                 let (x1, y1, z1) = (last.x, last.y, last.z);
                                 let t = trajectory.len() as f64 * conf.t_step;
-                                vec![x0, y0, z0, x1, y1, z1, t]
+                                vec![ starting_pos.x , starting_pos.y , starting_pos.z
+                                    ,              x1,              y1,              z1
+                                    , t
+                                    ]
                             })
                             .collect();
         data.into_iter().for_each(|x| {
