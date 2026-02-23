@@ -63,7 +63,8 @@ impl Drop for CsvWriter {
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
-    use tempfile::{NamedTempFile, TempDir, tempdir};
+    use tempfile::NamedTempFile;
+    use crate::utils::tempfile;
 
     #[test]
     fn test_process_line_simple() {
@@ -152,16 +153,6 @@ mod tests {
         let data  = read_csv(fname, " ", 8).expect("Could not read file");
         assert_eq!(data   .len(), 12345 - 8); // the file has 12345 lines in total
         assert_eq!(data[0].len(),  4);
-    }
-
-    fn tempfile(stem: &str) -> (TempDir, String) {
-        let dir  = tempdir().unwrap();
-        let file = dir.path()
-                      .join(stem)
-                      .to_str()
-                      .unwrap()
-                      .to_string();
-        (dir, file)
     }
 
     #[test]
