@@ -54,6 +54,8 @@
                 cargo-nextest  # Modern test runner
                 bacon          # Background rust code checker
                 just           # Command runner
+                hdf5-cpp
+                hdf5-cpp.dev
               ];
 
               # Shell configuration
@@ -67,6 +69,9 @@
 
               # Enable rust-analyzer support (requires rust-src component in rust-toolchain.toml)
               RUST_SRC_PATH = "${pkgs.rust-tools}/lib/rustlib/src/rust/library";
+
+              # Provide HDF5 dir
+              HDF5_DIR = pkgs.symlinkJoin { name = "hdf5"; paths = [ pkgs.hdf5 pkgs.hdf5.dev ]; };
             };
           }
       );
