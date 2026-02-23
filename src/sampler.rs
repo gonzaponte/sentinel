@@ -1,10 +1,10 @@
+use std::f64::consts::{PI, TAU};
+
+use float_eq::float_eq;
+use nalgebra::{Point3, Vector3, point, vector};
+
 use crate::geometry::{Cone, Geometry};
 use crate::random;
-
-use nalgebra::{Point3, Vector3, point, vector};
-use float_eq::float_eq;
-
-use std::f64::consts::{PI, TAU};
 
 pub trait Sampler<G: Geometry>: Send + Sync {
     fn sample(&self, geometry: &G) -> Point3<f64>;
@@ -14,6 +14,7 @@ pub struct FixedPositionSampler(pub Point3<f64>);
 pub struct VolumeSampler;
 pub struct SurfaceSampler;
 pub struct EdgeVolumeSampler(pub f64); // distance_from_edge
+
 
 impl<G: Geometry> Sampler<G> for FixedPositionSampler {
     fn sample(&self, _g: &G) -> Point3<f64> {
