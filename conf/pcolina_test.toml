@@ -10,3 +10,5 @@ field_to_mm     = 1e3
 field_to_Vpercm = 0.01
 
 field_invert_z = true
+
+generator = "CathodeCenter"

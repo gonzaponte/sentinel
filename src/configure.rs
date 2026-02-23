@@ -1,6 +1,8 @@
 use config::{Config, ConfigError, File};
 use serde::Deserialize;
 
+use crate::generator::Generator;
+
 #[allow(non_snake_case)]
 #[derive(Debug, Deserialize, Clone)]
 pub struct Configure {
@@ -12,6 +14,7 @@ pub struct Configure {
     pub field_to_Vpercm: f64,
     pub field_invert_z : bool,
     pub t_step         : f64,
+    pub generator      : Generator,
 }
 
 impl Configure {
@@ -43,6 +46,8 @@ mod tests {
         assert!         (c.field_invert_z );
         assert_float_eq!(c.zmax           , 10.0, ulps<=2);
         assert_float_eq!(c.t_step         , 1e-4, ulps<=2);
+
+        assert!         (c.generator == Generator::FixedPos(0., 0., 9.));
     }
 
     #[test]
