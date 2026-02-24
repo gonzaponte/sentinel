@@ -1,28 +1,28 @@
-use std::ops::{Deref, DerefMut};
+use std::num::NonZero;
+
 use nalgebra::{Point2, Point3};
-use derive_new::new;
+use kiddo::{ImmutableKdTree, SquaredEuclidean};
 
 use crate::io::read_csv;
 use crate::field_point::FieldPoint;
 
-#[derive(Clone, Debug, new)]
-pub struct Field(Vec<FieldPoint>);
-
-impl Deref for Field {
-    type Target = Vec<FieldPoint>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
+#[derive(Clone, Debug)]
+pub struct Field{
+    pub tree        : ImmutableKdTree<f64, 2>,
+    pub field_points: Vec<FieldPoint>,
 }
-
-impl DerefMut for Field {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
 
 impl Field {
+    pub fn new(field_points: Vec<FieldPoint>) -> Self {
+        let points : Vec<[f64; 2]> =
+            field_points.iter()
+                        .map(|fp| [fp.r(), fp.z()])
+                        .collect();
+
+        let tree = ImmutableKdTree::new_from_slice(&points);
+        Field{tree, field_points}
+    }
+
     #[allow(non_snake_case)]
     pub fn from_file(filename: &str, to_mm: f64, to_Vpercm: f64, invert_z: bool) -> Self {
         let data = read_csv(filename, " ", 8).expect("Could not read field file");
@@ -30,30 +30,27 @@ impl Field {
         let mut previous_pos  = Point2::<f64>::origin();
         let mut  current_line = 999_999_999_999_999usize;
 
-        let sign   = if invert_z {-1.0} else {1.0};
-        let points = data.into_iter()
-                         .rev()
-                         .map(|row| vec![ row[0] * to_mm
-                                        , row[1] * to_mm * sign
-                                        , row[2]
-                                        , row[3] * to_Vpercm
-                                        ])
-                         .filter_map(|row| FieldPoint::from_csv_row(row, &mut previous_pos, &mut current_line))
-                         .collect();
+        let sign = if invert_z {-1.0} else {1.0};
+        let field_points : Vec<FieldPoint> =
+            data.into_iter()
+                .rev()
+                .map(|row| vec![ row[0] * to_mm
+                               , row[1] * to_mm * sign
+                               , row[2]
+                               , row[3] * to_Vpercm
+                ])
+                .filter_map(|row| FieldPoint::from_csv_row(row, &mut previous_pos, &mut current_line))
+                .collect();
 
-        Field::new(points)
+        Field::new(field_points)
     }
 
     pub fn find_nearest(&self, pos: &Point3<f64>) -> &FieldPoint {
-        let r  = (pos.x*pos.x + pos.y*pos.y).sqrt();
-        let p0 = Point2::new(r, pos.z);
-
-        let distance2 = move |p: &FieldPoint| { (p.pos - p0).magnitude_squared() };
-        self.iter()
-            .map(|p| (distance2(p), p))
-            .min_by(|a, b| a.0.partial_cmp(&b.0).unwrap())
-            .unwrap()
-            .1
+        let r   = (pos.x*pos.x + pos.y*pos.y).sqrt();
+        let z   = pos.z;
+        let one = NonZero::new(1).unwrap();
+        let index = self.tree.nearest_n::<SquaredEuclidean>(&[r, z], one)[0].item;
+        self.field_points.get(index as usize).unwrap()
     }
 }
 
@@ -80,10 +77,10 @@ mod tests {
 
         let field = Field::from_file(file.path().to_str().unwrap(), 1., 1., true);
 
-        assert_eq!(field.len(), 2); // first one is skipped for being the end of the line
+        assert_eq!(field.field_points.len(), 2); // first one is skipped for being the end of the line
 
         let dir = Vector2::new(0.0, -1.0);
-        for (i, fp) in field.iter().enumerate() {
+        for (i, fp) in field.field_points.iter().enumerate() {
             let z = 14.5 + (10*i) as f64;
             assert_float_eq!  (fp.r(),  1.2, ulps <= 2);
             assert_float_eq!  (fp.z(),    z, ulps <= 2);
