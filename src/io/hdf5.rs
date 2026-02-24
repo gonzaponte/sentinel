@@ -3,6 +3,8 @@ use std::io::Result;
 use std::rc::Rc;
 
 use hdf5_metno::{self as hdf5, Error, Extent};
+use hdf5_metno::filters::BloscShuffle;
+
 use ndarray::s;
 
 use crate::io::Writer;
@@ -29,6 +31,7 @@ impl<T: hdf5::H5Type> Hdf5Writer<T>{
         }
         let dataset = file.new_dataset::<T>()
             .chunk((chunk_size,))
+            .blosc_zlib(4, BloscShuffle::Byte)
             .shape(Extent::resizable(0))
             .create(dataset)?;
 
