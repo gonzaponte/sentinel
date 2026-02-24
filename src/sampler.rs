@@ -25,7 +25,7 @@ impl<G: Geometry> Sampler<G> for FixedPositionSampler {
 impl Sampler<Cone> for VolumeSampler {
     fn sample(&self, g: &Cone) -> Point3<f64> {
         let z0 = g.rmin/g.rmax(); // fraction of total cone height
-        let z  = random::uniform(z0.powi(3), 1.0).cbrt();
+        let z  = random::uniform(z0.powi(3), 1.0).cbrt() * g.zmax;
         let r  = random::sample().sqrt() * g.form_factor * z;
         let p  = random::sample() * TAU;
         point![r*p.cos(), r*p.sin(), (1f64-z0)*z]
