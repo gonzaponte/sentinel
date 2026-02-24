@@ -17,6 +17,26 @@ pub fn interpolate_1d( x          : &Vec<f64>
     Ok(result)
 }
 
+pub fn linspace(min: f64, max: f64, n: usize) -> Vec<f64> {
+    match n {
+        0 => vec![],
+        1 => vec![min],
+        _ => {
+            let delta = (max - min) / ( n.saturating_sub(1) as f64);
+
+            (0..n).map(|i| min + (i as f64) * delta)
+                  .collect()
+        },
+    }
+}
+
+pub fn digitize(value: f64, bins: &Vec<f64>) -> Option<usize> {
+    if value < *bins.first().unwrap() { return None; }
+
+    bins[1..].iter()
+             .position(|lower| value < *lower)
+}
+
 #[cfg(test)]
 use tempfile::{TempDir, tempdir};
 
@@ -35,6 +55,10 @@ pub fn tempfile(stem: &str) -> (TempDir, String) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use float_eq::assert_float_eq;
+    use pretty_assertions::assert_eq;
+    use rstest::rstest;
 
     #[test]
     fn test_interpolate_1d_simple() {
@@ -74,4 +98,74 @@ mod tests {
         let result = interpolate_1d(&x, &y,  2.); assert!(result.is_err()); // out
     }
 
+    #[rstest]
+    #[case(1)]
+    #[case(12)]
+    #[case(123)]
+    #[case(1234)]
+    fn test_linspace_len(#[case] n: usize) {
+        let v = linspace(0.0, 1.0, n);
+        assert_eq!(v.len(), n);
+    }
+
+    #[test]
+    fn test_linspace_basic() {
+        let v = linspace(0.0, 1.0, 5);
+        assert_float_eq!(v[0], 0.00, ulps<=2);
+        assert_float_eq!(v[1], 0.25, ulps<=2);
+        assert_float_eq!(v[2], 0.50, ulps<=2);
+        assert_float_eq!(v[3], 0.75, ulps<=2);
+        assert_float_eq!(v[4], 1.00, ulps<=2);
+    }
+
+    #[test]
+    fn test_linspace_single_point() {
+        let v = linspace(3.0, 10.0, 1);
+        assert_float_eq!(v[0], 3.0, ulps<=2);
+    }
+
+    #[test]
+    fn test_linspace_zero_points() {
+        let v = linspace(0.0, 1.0, 0);
+        assert!(v.is_empty());
+    }
+
+    #[test]
+    fn test_linspace_descending() {
+        let v = linspace(1.0, 0.0, 3);
+        assert_float_eq!(v[0], 1.00, ulps<=2);
+        assert_float_eq!(v[1], 0.50, ulps<=2);
+        assert_float_eq!(v[2], 0.00, ulps<=2);
+    }
+
+    #[test]
+    fn test_digitize_basic() {
+        let bins = vec![-9.0, 0.0, 1.0, 8.0];
+
+        assert_eq!(digitize(-3.5, &bins), Some(0));
+        assert_eq!(digitize( 0.5, &bins), Some(1));
+        assert_eq!(digitize( 7.9, &bins), Some(2));
+    }
+
+    #[test]
+    fn test_digitize_exact_bin_edges() {
+        let bins = vec![0.0, 1.0, 4.0, 9.0];
+
+        assert_eq!(digitize(0.0, &bins), Some(0));
+        assert_eq!(digitize(1.0, &bins), Some(1));
+        assert_eq!(digitize(4.0, &bins), Some(2));
+        assert!   (digitize(9.0, &bins).is_none());
+    }
+
+    #[test]
+    fn test_digitize_below_first_bin() {
+        let bins = vec![0.0, 2.0];
+        assert!(digitize(-0.1, &bins).is_none());
+    }
+
+    #[test]
+    fn test_digitize_above_last_bin() {
+        let bins = vec![0.0, 3.0];
+        assert!(digitize(5.0, &bins).is_none());
+    }
 }
