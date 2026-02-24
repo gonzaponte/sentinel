@@ -5,6 +5,7 @@ use std::rc::Rc;
 use hdf5_metno::{self as hdf5, Error, Extent};
 use ndarray::s;
 
+use crate::io::Writer;
 
 pub fn read_hdf5<T: hdf5::H5Type + Clone>(filename: &str, dataset : &str) -> hdf5::Result<Vec<T>> {
     let file    = hdf5::File::open(filename)?;
@@ -57,16 +58,13 @@ impl<T: hdf5::H5Type> Hdf5Writer<T>{
         }
     }
 
-    pub fn write_many(&self, items: Vec<T>) -> hdf5::Result<()> {
-        for item in items {
-            self.write(item)?;
-        }
-        Ok(())
-    }
-
     pub fn flush(&self) -> Result<()> {
         self.dump_cache()
     }
+}
+
+impl<T: hdf5::H5Type> Writer<T> for Hdf5Writer<T> {
+    fn write(&self, value: T) -> Result<()> { self.write(value) }
 }
 
 impl<T: hdf5::H5Type> Drop for Hdf5Writer<T> {
@@ -83,7 +81,7 @@ mod tests {
     use float_eq::assert_float_eq;
     use hdf5;
     use crate::utils::tempfile;
-    use crate::io::hdf5_types::IonizationHits;
+    use crate::io::hdf5_types::{Endpoint, IonizationHits};
 
     fn extremes() -> (Endpoint, Endpoint) {
         let e0 = Endpoint{ event:  0, x0:  1.0, y0:  2.0, z0:  3.0, x1:  4.0, y1:  5.0, z1:  6.0, t :  7.0};
@@ -186,32 +184,6 @@ mod tests {
         assert_float_eq!(extremes.y1, 5.0, ulps<=2);
         assert_float_eq!(extremes.z1, 6.0, ulps<=2);
         assert_float_eq!(extremes.t , 7.0, ulps<=2);
-    }
-
-    #[test]
-    fn dataset_writer_round_trip_many() {
-        let (_dir, filename) = tempfile("round_trip_many");
-        let file             = hdf5::File::create(filename.clone()).unwrap();
-        let writer           = Hdf5Writer::<Endpoint>::new(Rc::new(file), "a_dataset", 2).unwrap();
-
-        let data_written = extremes();
-        writer.write_many(vec![data_written.0, data_written.1]).unwrap();
-
-        let data_read = read_hdf5::<Endpoint>(&filename, "a_dataset").unwrap();
-
-        assert_eq!(data_read.len(), 2);
-
-        for (i, extremes) in data_read.into_iter().enumerate() {
-            let offset = i as f32 * 10.0;
-            assert_eq!      (extremes.event, i as u32 * 10);
-            assert_float_eq!(extremes.x0, 1.0 + offset, ulps<=2);
-            assert_float_eq!(extremes.y0, 2.0 + offset, ulps<=2);
-            assert_float_eq!(extremes.z0, 3.0 + offset, ulps<=2);
-            assert_float_eq!(extremes.x1, 4.0 + offset, ulps<=2);
-            assert_float_eq!(extremes.y1, 5.0 + offset, ulps<=2);
-            assert_float_eq!(extremes.z1, 6.0 + offset, ulps<=2);
-            assert_float_eq!(extremes.t , 7.0 + offset, ulps<=2);
-        }
     }
 
 }
