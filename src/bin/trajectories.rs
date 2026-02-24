@@ -1,15 +1,18 @@
 use std::io:: Result;
 use std::path::Path;
+use std::rc::Rc;
 
 use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
+use hdf5_metno as hdf5;
 
 use sentinel::configure::Configure;
 use sentinel::geometry::Cone;
 use sentinel::field::Field;
 use sentinel::tracker::Tracker;
-use sentinel::io::CsvWriter;
+use sentinel::io::{Writer, CsvWriter, Hdf5Writer};
+use sentinel::io::hdf5_types::TrajectoryPoint;
 use sentinel::invalid_input;
 
 #[derive(Parser, Debug)]
@@ -33,6 +36,9 @@ struct CLI {
 
     #[arg(short, long, default_value_t=10)]
     threads: usize,
+
+    #[arg(long, default_value_t=false)]
+    csv: bool,
 }
 
 pub fn main() -> Result<()> {
@@ -45,10 +51,19 @@ pub fn main() -> Result<()> {
 
     rayon::ThreadPoolBuilder::new().num_threads(args.threads).build_global().unwrap();
 
-    let header   = "event x y z t".split(" ")
-                                  .map(|v| v.to_string())
-                                  .collect::<Vec<String>>();
-    let mut writer = CsvWriter::new(&path.to_str().unwrap(), " ", header).unwrap();
+    let writer : Box<dyn Writer<TrajectoryPoint>> =
+        if args.csv {
+            let header = "event x y z t".split(" ")
+                                        .map(|v| v.to_string())
+                                        .collect::<Vec<String>>();
+
+            Box::new(CsvWriter::new(&path.to_str().unwrap(), " ", header).unwrap())
+        }
+        else {
+            let file = hdf5::File::create(&path.to_str().unwrap()).unwrap();
+            Box::new(Hdf5Writer::<TrajectoryPoint>::new(Rc::new(file), "trajectories", 1024).unwrap())
+        };
+
     let geometry   = Cone::new(conf.rmin, conf.form_factor, conf.zmax);
     let field      = Field::from_file(&conf.field_file, conf.field_to_mm, conf.field_to_Vpercm, true);
     let tracker    = Tracker::new(field, geometry.clone(), conf.t_step);
@@ -68,7 +83,7 @@ pub fn main() -> Result<()> {
     );
     pb.reset(); // force drawing
     for batch in 0..nbatch {
-        let data : Vec<Vec<Vec<f64>>> =
+        let data : Vec<TrajectoryPoint> =
         (0..args.batch_size).into_par_iter()
                             .map( |evt| {
                                 let evt          = evt + batch * args.batch_size;
@@ -76,15 +91,17 @@ pub fn main() -> Result<()> {
                                 tracker.propagate_from(starting_pos)
                                        .into_iter()
                                        .enumerate()
-                                       .map(|(i, p)| vec![evt as f64, p.x, p.y, p.z, i as f64 * conf.t_step])
-                                       .collect::<Vec<Vec<f64>>>()
+                                       .map(|(i, p)| TrajectoryPoint{ event: evt as u32
+                                                                    , x    : p.x as f32
+                                                                    , y    : p.y as f32
+                                                                    , z    : p.z as f32
+                                                                    , t    : i as f32 * conf.t_step as f32
+                                                                    })
+                                       .collect::<Vec<TrajectoryPoint>>()
                             })
+                            .flatten()
                             .collect();
-        data.into_iter().for_each(|evt| {
-            for row in evt {
-                writer.write(row).unwrap();
-            }
-        });
+        writer.write_many(data)?;
         pb.inc(1);
     }
     pb.finish();
