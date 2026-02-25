@@ -3,7 +3,6 @@ use std::path::Path;
 use std::rc::Rc;
 
 use clap::Parser;
-use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use hdf5_metno as hdf5;
 
@@ -14,6 +13,7 @@ use sentinel::tracker::Tracker;
 use sentinel::io::{Writer, CsvWriter, Hdf5Writer};
 use sentinel::io::hdf5_types::TrajectoryPoint;
 use sentinel::invalid_input;
+use sentinel::progress::MaybeProgressBar;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -39,6 +39,9 @@ struct CLI {
 
     #[arg(long, default_value_t=false)]
     csv: bool,
+
+    #[arg(long, default_value_t=false)]
+    batch: bool,
 }
 
 pub fn main() -> Result<()> {
@@ -70,18 +73,8 @@ pub fn main() -> Result<()> {
     let sampler    = conf.generator.sampler(&geometry);
 
     let nbatch = args.n_events.div_ceil(args.batch_size);
-    let pb = ProgressBar::new(nbatch as u64);
-    pb.set_style(
-        ProgressStyle::with_template(
-            "{spinner:.magenta} [{elapsed_precise}] \
-             [{bar:40.bold.#c000ff/#5a00aa}] \
-             {pos:>7}/{len:7} \
-             {percent:>3}% \
-             ETA {eta_precise}"
-        ).unwrap()
-         .progress_chars("█▉▊▋▌▍▎▏ ") // other: "█▓░" "█▇▆▅▄▃▂▁ "
-    );
-    pb.reset(); // force drawing
+    let pb = MaybeProgressBar::new(nbatch, args.batch);
+
     for batch in 0..nbatch {
         let data : Vec<TrajectoryPoint> =
         (0..args.batch_size).into_par_iter()
