@@ -25,3 +25,4 @@ tempfile = "3.24.0"
 hdf5_metno = { package = "hdf5-metno", version = "0.12.3" , features=["blosc-zlib"]}
 ndarray = "0.17.2"
 rstest = "0.26.1"
+kiddo = "5.2.4"
