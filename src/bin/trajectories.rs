@@ -1,6 +1,7 @@
 use std::io:: Result;
 use std::path::Path;
 use std::rc::Rc;
+use std::time::Instant;
 
 use clap::Parser;
 use rayon::prelude::*;
@@ -45,6 +46,8 @@ struct CLI {
 }
 
 pub fn main() -> Result<()> {
+    let timer = Instant::now();
+
     let args = CLI::parse();
     let conf = Configure::new(&args.conf).unwrap();
     let path = Path::new(&args.output);
@@ -72,9 +75,12 @@ pub fn main() -> Result<()> {
     let tracker    = Tracker::new(field, geometry.clone(), conf.t_step);
     let sampler    = conf.generator.sampler(&geometry);
 
+    println!("Initialization time: {:?}", timer.elapsed().as_secs_f64());
+
     let nbatch = args.n_events.div_ceil(args.batch_size);
     let pb = MaybeProgressBar::new(nbatch, args.batch);
 
+    let timer = Instant::now();
     for batch in 0..nbatch {
         let data : Vec<TrajectoryPoint> =
         (0..args.batch_size).into_par_iter()
@@ -99,5 +105,12 @@ pub fn main() -> Result<()> {
     }
     pb.finish();
 
+    let exe_time = timer.elapsed().as_secs_f64();
+    println!( "Execution time for {} events: {:.2} s => {:.1} evt/s or {:.8} s/evt"
+            , args.n_events
+            , exe_time
+            , args.n_events as f64 / exe_time
+            , exe_time / args.n_events as f64
+            );
     Ok(())
 }
