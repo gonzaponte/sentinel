@@ -1,0 +1,14 @@
+rmin        =  32.0
+form_factor =   1.0
+zmax        = 240.0
+
+field_file = "/home/gonzalo/data/COLINA/comsol/COLINA_triangular_efield_ring_degrad_4_form_factor_1.txt"
+
+t_step = 1e-2
+
+field_to_mm     = 1e3
+field_to_Vpercm = 0.01
+
+field_invert_z = true
+
+generator = "Volume"
