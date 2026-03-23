@@ -11,6 +11,7 @@ pub trait Sampler<G: Geometry>: Send + Sync {
 }
 
 pub struct FixedPositionSampler(pub Point3<f64>);
+pub struct PlaneSampler(pub f64); // angle
 pub struct VolumeSampler;
 pub struct SurfaceSampler;
 pub struct EdgeVolumeSampler(pub f64); // distance_from_edge
@@ -21,6 +22,24 @@ impl<G: Geometry> Sampler<G> for FixedPositionSampler {
         self.0
     }
 }
+
+
+impl Sampler<Cone> for PlaneSampler {
+    fn sample(&self, g: &Cone) -> Point3<f64> {
+        // join the profile of a cone with an upside down cone to make a
+        // rectangle. Sample it uniformly and reflect around the center
+
+        let mut z = random::sample() * g.zmax;
+        let mut r = random::sample() * (g.rmin + g.rmax());
+        if r > g.r_at_z(z) {
+            r = g.rmin + g.rmax() - r;
+            z = g.zmax - z;
+        }
+        let p  = self.0;
+        point![r*p.cos(), r*p.sin(), z]
+    }
+}
+
 
 impl Sampler<Cone> for VolumeSampler {
     fn sample(&self, g: &Cone) -> Point3<f64> {
@@ -114,6 +133,21 @@ mod tests {
             let r = (p.x.powi(2) + p.y.powi(2)).sqrt();
             assert!(r - rmin < p.z);
             assert!(p.z <= zmax)
+        }
+    }
+
+    #[test]
+    fn test_plane_sampler_cone() {
+        let rmin    = 1.234;
+        let zmax    = 5.678;
+        let cone    = Cone{rmin, form_factor: 1., zmax};
+        let sampler = PlaneSampler(PI/2.0);
+        for _ in 0..1000 {
+            let p = sampler.sample(&cone);
+            let r = (p.x.powi(2) + p.y.powi(2)).sqrt();
+            assert!(r - rmin < p.z);
+            assert!(p.z <= zmax);
+            assert!(p.x.abs() < 1e-12);
         }
     }
 

@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::sampler::{Sampler, FixedPositionSampler, EdgeVolumeSampler, SurfaceSampler, VolumeSampler};
+use crate::sampler::{Sampler, FixedPositionSampler, EdgeVolumeSampler, PlaneSampler, SurfaceSampler, VolumeSampler};
 use crate::geometry::Geometry;
 
 use nalgebra::point;
@@ -12,6 +12,7 @@ pub enum Generator {
     Center,
     Volume,
     Surface,
+    Plane(f64),
     Edge(f64),
     FromFile(String),
 }
@@ -19,6 +20,7 @@ pub enum Generator {
 impl Generator {
     pub fn sampler<G: Geometry>(&self, geo: &dyn Geometry) -> Box<dyn Sampler<G>>
     where
+             PlaneSampler: Sampler<G>,
             VolumeSampler: Sampler<G>,
            SurfaceSampler: Sampler<G>,
         EdgeVolumeSampler: Sampler<G>,
@@ -27,6 +29,7 @@ impl Generator {
             Generator::FixedPos(x,y,z)  => Box::new(FixedPositionSampler(point![x, y, z])),
             Generator::CathodeCenter    => Box::new(FixedPositionSampler(point![0., 0., geo.cathode_z() - 1.0])),
             Generator::Center           => Box::new(FixedPositionSampler(point![0., 0., geo.cathode_z() / 2.0])),
+            Generator::Plane(a)         => Box::new(        PlaneSampler(a)),
             Generator::Volume           => Box::new(       VolumeSampler{}),
             Generator::Surface          => Box::new(      SurfaceSampler{}),
             Generator::Edge(d)          => Box::new(   EdgeVolumeSampler(d)),
