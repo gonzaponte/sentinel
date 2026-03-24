@@ -7,7 +7,7 @@ use crate::geometry::{Cone, Geometry};
 use crate::random;
 
 pub trait Sampler<G: Geometry>: Send + Sync {
-    fn sample(&self, geometry: &G) -> Point3<f64>;
+    fn sample(&self, geometry: &G) -> Option<Point3<f64>>;
 }
 
 pub struct FixedPositionSampler(pub Point3<f64>);
@@ -18,14 +18,14 @@ pub struct EdgeVolumeSampler(pub f64); // distance_from_edge
 
 
 impl<G: Geometry> Sampler<G> for FixedPositionSampler {
-    fn sample(&self, _g: &G) -> Point3<f64> {
-        self.0
+    fn sample(&self, _g: &G) -> Option<Point3<f64>> {
+        Some(self.0)
     }
 }
 
 
 impl Sampler<Cone> for PlaneSampler {
-    fn sample(&self, g: &Cone) -> Point3<f64> {
+    fn sample(&self, g: &Cone) -> Option<Point3<f64>> {
         // join the profile of a cone with an upside down cone to make a
         // rectangle. Sample it uniformly and reflect around the center
 
@@ -36,25 +36,25 @@ impl Sampler<Cone> for PlaneSampler {
             z = g.zmax - z;
         }
         let p  = self.0;
-        point![r*p.cos(), r*p.sin(), z]
+        Some( point![r*p.cos(), r*p.sin(), z] )
     }
 }
 
 
 impl Sampler<Cone> for VolumeSampler {
-    fn sample(&self, g: &Cone) -> Point3<f64> {
+    fn sample(&self, g: &Cone) -> Option<Point3<f64>> {
         let zf = g.rmin / g.rmax(); // fraction of total cone height
         let z0 = g.rmin / g.form_factor;
         let z  = random::uniform(zf.powi(3), 1.0).cbrt() * (g.zmax + z0);
         let r  = random::sample().sqrt() * g.form_factor * z;
         let p  = random::sample() * TAU;
-        point![r*p.cos(), r*p.sin(), z-z0]
+        Some( point![r*p.cos(), r*p.sin(), z-z0] )
     }
 }
 
 
 impl Sampler<Cone> for SurfaceSampler {
-    fn sample(&self, g: &Cone) -> Point3<f64> {
+    fn sample(&self, g: &Cone) -> Option<Point3<f64>> {
         let factor    = (1f64 + g.form_factor.powi(-2)).sqrt();
         // a is the cone side length
         // a0 is the side length of the truncated tip
@@ -82,16 +82,16 @@ impl Sampler<Cone> for SurfaceSampler {
         };
 
         let p = random::sample() * TAU;
-        Point3::new(r * p.cos(), r * p.sin(), z)
+        Some( Point3::new(r * p.cos(), r * p.sin(), z) )
     }
 }
 
 
 impl Sampler<Cone> for EdgeVolumeSampler {
-    fn sample(&self, g: &Cone) -> Point3<f64> {
+    fn sample(&self, g: &Cone) -> Option<Point3<f64>> {
         let mut out = point![0., 0., -1.];
         while !g.is_within(&out) {
-            let p = SurfaceSampler{}.sample(g);
+            let p = SurfaceSampler{}.sample(g).unwrap();
             let n = if float_eq!(p.z, g.zmax, ulps<=2) {
                 Vector3::z()
             } else {
@@ -99,7 +99,7 @@ impl Sampler<Cone> for EdgeVolumeSampler {
             };
             out = p - n * (random::sample() * self.0);
         }
-        out
+        Some(out)
     }
 }
 
@@ -116,7 +116,7 @@ mod tests {
         let p0      = point![9., 8., 7.];
         let sampler = FixedPositionSampler(p0.clone());
         for _ in 0..100 {
-            let p = sampler.sample(&dummy);
+            let p = sampler.sample(&dummy).unwrap();
             assert_point3_eq!(p, p0, ulps<=2);
         }
     }
@@ -129,7 +129,7 @@ mod tests {
         let cone    = Cone{rmin, form_factor: 1., zmax};
         let sampler = VolumeSampler{};
         for _ in 0..1000 {
-            let p = sampler.sample(&cone);
+            let p = sampler.sample(&cone).unwrap();
             let r = (p.x.powi(2) + p.y.powi(2)).sqrt();
             assert!(r - rmin < p.z);
             assert!(p.z <= zmax)
@@ -143,7 +143,7 @@ mod tests {
         let cone    = Cone{rmin, form_factor: 1., zmax};
         let sampler = PlaneSampler(PI/2.0);
         for _ in 0..1000 {
-            let p = sampler.sample(&cone);
+            let p = sampler.sample(&cone).unwrap();
             let r = (p.x.powi(2) + p.y.powi(2)).sqrt();
             assert!(r - rmin < p.z);
             assert!(p.z <= zmax);
@@ -158,7 +158,7 @@ mod tests {
         let cone    = Cone{rmin, form_factor: 1., zmax};
         let sampler = SurfaceSampler{};
         for _ in 0..1000 {
-            let p = sampler.sample(&cone);
+            let p = sampler.sample(&cone).unwrap();
             let r = (p.x.powi(2) + p.y.powi(2)).sqrt();
 
             assert!( float_eq!(p.z, zmax, ulps<=2) ||
@@ -176,7 +176,7 @@ mod tests {
         let tol     = d * 2f64.sqrt(); // given by form factor
         let sampler = EdgeVolumeSampler(d);
         for _ in 0..1000 {
-            let p = sampler.sample(&cone);
+            let p = sampler.sample(&cone).unwrap();
             let r = (p.x.powi(2) + p.y.powi(2)).sqrt();
             let rmax = cone.r_at_z(p.z);
             assert!( cone.is_within(&p) );

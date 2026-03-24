@@ -86,7 +86,7 @@ pub fn main() -> Result<()> {
         (0..args.batch_size).into_par_iter()
                             .map( |evt| {
                                 let evt          = evt + batch * args.batch_size;
-                                let starting_pos = sampler.sample(&geometry);
+                                let starting_pos = sampler.sample(&geometry).unwrap();
                                 tracker.propagate_from(starting_pos)
                                        .into_iter()
                                        .enumerate()
