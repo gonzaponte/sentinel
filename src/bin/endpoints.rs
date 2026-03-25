@@ -84,20 +84,22 @@ pub fn main() -> Result<()> {
     for batch in 0..nbatch {
         let data : Vec<Endpoint> =
         (0..args.batch_size).into_par_iter()
-                            .map( |evt| {
-                                let evt          = evt + batch * args.batch_size;
-                                let starting_pos = sampler.sample(&geometry).unwrap();
-                                let trajectory = tracker.propagate_from(starting_pos.clone());
-                                let last = trajectory.last().unwrap();
-                                Endpoint{ event: evt as u32
-                                        , x0   : starting_pos.x as f32
-                                        , y0   : starting_pos.y as f32
-                                        , z0   : starting_pos.z as f32
-                                        , x1   :         last.x as f32
-                                        , y1   :         last.y as f32
-                                        , z1   :         last.z as f32
-                                        , t    : trajectory.len() as f32 * conf.t_step as f32
-                                }
+                            .filter_map( |evt| {
+                                let evt = evt + batch * args.batch_size;
+
+                                sampler.sample(&geometry).map(|starting_pos| {
+                                    let trajectory = tracker.propagate_from(starting_pos.clone());
+                                    let last = trajectory.last().unwrap();
+                                    Endpoint{ event: evt as u32
+                                            , x0   : starting_pos.x as f32
+                                            , y0   : starting_pos.y as f32
+                                            , z0   : starting_pos.z as f32
+                                            , x1   :         last.x as f32
+                                            , y1   :         last.y as f32
+                                            , z1   :         last.z as f32
+                                            , t    : trajectory.len() as f32 * conf.t_step as f32
+                                            }
+                                })
                             })
                             .collect();
         writer.write_many(data)?;

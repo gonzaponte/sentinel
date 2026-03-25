@@ -84,19 +84,21 @@ pub fn main() -> Result<()> {
     for batch in 0..nbatch {
         let data : Vec<TrajectoryPoint> =
         (0..args.batch_size).into_par_iter()
-                            .map( |evt| {
-                                let evt          = evt + batch * args.batch_size;
-                                let starting_pos = sampler.sample(&geometry).unwrap();
-                                tracker.propagate_from(starting_pos)
-                                       .into_iter()
-                                       .enumerate()
-                                       .map(|(i, p)| TrajectoryPoint{ event: evt as u32
-                                                                    , x    : p.x as f32
-                                                                    , y    : p.y as f32
-                                                                    , z    : p.z as f32
-                                                                    , t    : i as f32 * conf.t_step as f32
-                                                                    })
-                                       .collect::<Vec<TrajectoryPoint>>()
+                            .filter_map( |evt| {
+                                let evt = evt + batch * args.batch_size;
+
+                                sampler.sample(&geometry).map(|starting_pos| {
+                                    tracker.propagate_from(starting_pos)
+                                           .into_iter()
+                                           .enumerate()
+                                           .map(|(i, p)| TrajectoryPoint{ event: evt as u32
+                                                                        , x    : p.x as f32
+                                                                        , y    : p.y as f32
+                                                                        , z    : p.z as f32
+                                                                        , t    : i as f32 * conf.t_step as f32
+                                           })
+                                           .collect::<Vec<TrajectoryPoint>>()
+                                })
                             })
                             .flatten()
                             .collect();
