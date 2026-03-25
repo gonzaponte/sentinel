@@ -1,6 +1,14 @@
 use serde::Deserialize;
 
-use crate::sampler::{Sampler, FixedPositionSampler, EdgeVolumeSampler, PlaneSampler, SurfaceSampler, VolumeSampler};
+use crate::sampler::{          FileSampler
+                    ,         PlaneSampler
+                    ,        VolumeSampler
+                    ,       SurfaceSampler
+                    ,    EdgeVolumeSampler
+                    , FixedPositionSampler
+                    ,              Sampler
+                    };
+
 use crate::geometry::Geometry;
 
 use nalgebra::point;
@@ -33,7 +41,7 @@ impl Generator {
             Generator::Volume           => Box::new(       VolumeSampler{}),
             Generator::Surface          => Box::new(      SurfaceSampler{}),
             Generator::Edge(d)          => Box::new(   EdgeVolumeSampler(d)),
-            Generator::FromFile(_p)     => unimplemented!(),
+            Generator::FromFile(f)      => Box::new(         FileSampler::new(&f)),
         }
     }
 }

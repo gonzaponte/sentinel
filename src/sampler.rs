@@ -1,10 +1,13 @@
 use std::f64::consts::{PI, TAU};
+use std::sync::Mutex;
 
 use float_eq::float_eq;
 use nalgebra::{Point3, Vector3, point, vector};
 
 use crate::geometry::{Cone, Geometry};
 use crate::random;
+use crate::io::read_hdf5;
+use crate::io::hdf5_types::IonizationHit;
 
 pub trait Sampler<G: Geometry>: Send + Sync {
     fn sample(&self, geometry: &G) -> Option<Point3<f64>>;
@@ -15,6 +18,15 @@ pub struct PlaneSampler(pub f64); // angle
 pub struct VolumeSampler;
 pub struct SurfaceSampler;
 pub struct EdgeVolumeSampler(pub f64); // distance_from_edge
+pub struct FileSampler(pub Mutex<std::vec::IntoIter<IonizationHit>>);
+
+impl FileSampler {
+    pub fn new(filename: &str) -> Self {
+        Self( Mutex::new(
+            read_hdf5(filename, "/MC/ionization_hits").unwrap().into_iter()
+        ))
+    }
+}
 
 
 impl<G: Geometry> Sampler<G> for FixedPositionSampler {
@@ -22,7 +34,6 @@ impl<G: Geometry> Sampler<G> for FixedPositionSampler {
         Some(self.0)
     }
 }
-
 
 impl Sampler<Cone> for PlaneSampler {
     fn sample(&self, g: &Cone) -> Option<Point3<f64>> {
@@ -100,6 +111,14 @@ impl Sampler<Cone> for EdgeVolumeSampler {
             out = p - n * (random::sample() * self.0);
         }
         Some(out)
+    }
+}
+
+impl<G> Sampler<G> for FileSampler where G: Geometry {
+    fn sample(&self, _g: &G) -> Option<Point3<f64>> {
+        self.0.lock().unwrap().next().map(|tp| {
+            point![tp.x as f64, tp.y as f64, tp.z as f64]
+        })
     }
 }
 
