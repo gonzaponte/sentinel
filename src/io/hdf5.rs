@@ -84,7 +84,7 @@ mod tests {
     use float_eq::assert_float_eq;
     use hdf5;
     use crate::utils::tempfile;
-    use crate::io::hdf5_types::{Endpoint, IonizationHits};
+    use crate::io::hdf5_types::{Endpoint, IonizationHit};
 
     fn extremes() -> (Endpoint, Endpoint) {
         let e0 = Endpoint{ event:  0, x0:  1.0, y0:  2.0, z0:  3.0, x1:  4.0, y1:  5.0, z1:  6.0, t :  7.0};
@@ -95,7 +95,7 @@ mod tests {
     #[test]
     fn test_read_hdf5() {
         let filename = "data/kr_hits.h5";
-        let data_read = read_hdf5::<IonizationHits>(&filename, "/MC/ionization_hits").unwrap();
+        let data_read = read_hdf5::<IonizationHit>(&filename, "/MC/ionization_hits").unwrap();
         assert_eq!(data_read.len(), 150);
 
         let first = data_read.first().unwrap();

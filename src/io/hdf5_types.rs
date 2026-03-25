@@ -2,7 +2,7 @@ use hdf5_metno as hdf5;
 
 #[derive(hdf5::H5Type, Clone, PartialEq, Debug)]
 #[repr(C)]
-pub struct IonizationHits {
+pub struct IonizationHit {
     pub event   : u64,
     pub track_id: u16,
     pub x       : f32,
