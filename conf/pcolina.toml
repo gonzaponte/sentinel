@@ -11,4 +11,6 @@ field_to_Vpercm = 0.01
 
 field_invert_z = true
 
-generator = "Volume"
+#generator = "Volume"
+#generator = { Plane = 0.0 }
+generator = {FromFile = "data/kr_hits.h5"}
