@@ -11,6 +11,16 @@ pub struct IonizationHit {
     pub e       : f32,
 }
 
+
+#[derive(hdf5::H5Type, Clone, PartialEq, Debug)]
+#[repr(C)]
+pub struct SensorHit {
+    pub event    : u64,
+    pub sensor_id: u16,
+    pub t        : f32,
+    pub n        : u32,
+}
+
 #[derive(hdf5::H5Type, Clone, PartialEq, Debug)]
 #[repr(C)]
 pub struct Endpoint {
