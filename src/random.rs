@@ -2,7 +2,7 @@ use std::f64::consts::TAU;
 
 use nalgebra::Point3;
 use rand::{random, rng};
-use rand_distr::{Distribution, Normal, Poisson};
+use rand_distr::{Distribution, Normal, Poisson, Exp};
 
 pub fn sample() -> f64 {
     random::<f64>()
@@ -18,6 +18,15 @@ pub fn normal(mu: f64, sig: f64) -> f64 {
 
 pub fn poisson(mu: f64) -> usize {
     Poisson::new(mu).unwrap().sample(&mut rng()) as usize
+}
+
+pub fn expo(scale: f64) -> f64 {
+    Exp::new(scale).unwrap().sample(&mut rng())
+}
+
+pub fn multiexpo(fractions: &Vec<f64>, scales: &Vec<f64>) -> f64 {
+    let scale = choice(scales, fractions);
+    expo(*scale)
 }
 
 pub fn circle(r: f64) -> (f64, f64) {
@@ -118,6 +127,15 @@ mod tests {
             let data = poisson(123.456);
             assert!(data >         0); // very very unlikely
             assert!(data < 1_000_000); // very very unlikely
+        }
+    }
+
+    #[test]
+    fn test_expo() {
+        for _ in 0..100_000 {
+            let data = expo(123.456);
+            assert!(data > 0.0);
+            assert!(data < 1.0); // very very unlikely
         }
     }
 
