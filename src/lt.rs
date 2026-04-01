@@ -123,7 +123,7 @@ impl DriftTable {
         Ok(Self{points, t_aves, probs, tree})
     }
 
-    pub fn get(&self, x: f32, y: f32, z: f32, n: usize, tau: f64) -> Vec<Point2<f32>> {
+    pub fn get(&self, x: f32, y: f32, z: f32, n: usize, tau: f64) -> (Vec<Point2<f32>>, f64) {
         let rot = Rotation2::new(y.atan2(x));
 
         let r      = (x*x + y*y).sqrt();
@@ -134,9 +134,10 @@ impl DriftTable {
 
         let n = exp_survival_n(*t_ave, tau, n);
 
-        (0..n).map(|_| choice(&points, &probs))
-              .map(|xy| rot * xy)
-              .collect()
+        let points = (0..n).map(|_| choice(&points, &probs))
+                           .map(|xy| rot * xy)
+                           .collect();
+        (points, *t_ave)
     }
 
 }
