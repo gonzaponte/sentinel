@@ -2,7 +2,7 @@ use std::f64::consts::TAU;
 
 use nalgebra::Point3;
 use rand::{random, rng};
-use rand_distr::{Distribution, Normal};
+use rand_distr::{Distribution, Normal, Poisson};
 
 pub fn sample() -> f64 {
     random::<f64>()
@@ -14,6 +14,10 @@ pub fn uniform(low: f64, upp: f64) -> f64 {
 
 pub fn normal(mu: f64, sig: f64) -> f64 {
     Normal::new(mu, sig).unwrap().sample(&mut rng())
+}
+
+pub fn poisson(mu: f64) -> usize {
+    Poisson::new(mu).unwrap().sample(&mut rng()) as usize
 }
 
 pub fn circle(r: f64) -> (f64, f64) {
@@ -99,6 +103,22 @@ mod tests {
 
         assert!((-10.5..-9.5).contains(&mu));
         assert!(( 14.5..16.5).contains(&std));
+    }
+
+    #[test]
+    fn test_poisson_mean() {
+        let data = (0..100_000).map(|_| poisson(2.5)).collect::<Vec<_>>();
+        let mean = (data.iter().sum::<usize>() as f64) / (data.len() as f64);
+        assert!( (-0.1..0.1).contains(&(mean - 2.5)) );
+    }
+
+    #[test]
+    fn test_poisson_extremes() {
+        for _ in 0..100_000 {
+            let data = poisson(123.456);
+            assert!(data >         0); // very very unlikely
+            assert!(data < 1_000_000); // very very unlikely
+        }
     }
 
     #[test]
