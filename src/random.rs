@@ -40,6 +40,13 @@ pub fn choice<'a, T>(values: &'a Vec<T>, probs: &Vec<f64>) -> &'a T {
     panic!("[random::choice] probabilities are not cumulatively normalized");
 }
 
+pub fn exp_survival(t: f64, scale: f64) -> bool {
+    -scale * sample().ln() > t
+}
+
+pub fn exp_survival_n(t: f64, scale: f64, n: usize) -> usize {
+    (0..n).filter(|_| exp_survival(t, scale)).count()
+}
 
 #[cfg(test)]
 mod tests {
@@ -193,4 +200,21 @@ mod tests {
             choice(&values, &probs);
         }
     }
+
+    #[test]
+     fn test_exp_survival_extreme_low() {
+         for _ in 0..10000 {
+             let out = exp_survival(1.0, 1e-15);
+             assert!(!out);
+         }
+     }
+
+    #[test]
+     fn test_exp_survival_extreme_high() {
+         for _ in 0..10000 {
+             let out = exp_survival(1.0, 1e15);
+             assert!(out);
+         }
+     }
+
 }
