@@ -17,7 +17,9 @@ pub fn normal(mu: f64, sig: f64) -> f64 {
 }
 
 pub fn poisson(mu: f64) -> usize {
-    Poisson::new(mu).unwrap().sample(&mut rng()) as usize
+    if mu.abs() < 1e-12 { return 0; }
+
+    Poisson::new(mu).expect(&format!("guadafaq? {mu}")).sample(&mut rng()) as usize
 }
 
 pub fn expo(scale: f64) -> f64 {
