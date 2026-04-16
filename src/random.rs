@@ -44,13 +44,18 @@ pub fn in_cone(r_min: f64, form_factor: f64, z_max: f64) -> Point3<f64> {
 
 pub fn choice<'a, T>(values: &'a Vec<T>, probs: &Vec<f64>) -> &'a T {
     // probs are assumed to be cumulatively normalized
+    choice_nonexhaustive(values, probs).expect("Input probabilities do not add up to 1.")
+}
+
+pub fn choice_nonexhaustive<'a, T>(values: &'a Vec<T>, probs: &Vec<f64>, ) -> Option<&'a T> {
+    // probs are assumed to be cumulatively normalized
     let r = sample();
-    for (v, p) in values.iter().zip(probs.iter()) {
-        if r < *p {
-            return v;
-        }
-    }
-    panic!("[random::choice] probabilities are not cumulatively normalized");
+
+    values.iter()
+          .zip(probs.iter())
+          .filter(|(_,p)| r <= **p)
+          .nth(0)
+          .map(|(v,_)| v)
 }
 
 pub fn exp_survival(t: f64, scale: f64) -> bool {
@@ -231,12 +236,25 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_choice_panics() {
+    fn test_choice_panics_with_nonexaustive_options() {
         let values = vec![0, 1, 2];
         let probs  = vec![0.1, 0.2, 0.3];
         for _ in 0..100 {
             choice(&values, &probs);
         }
+    }
+
+    #[test]
+    fn test_choice_nonexaustive() {
+        let values = vec![0, 1, 2];
+        let probs  = vec![0.1, 0.2, 0.3];
+        let mut n_none = 0;
+        for _ in 0..100 {
+            if choice_nonexhaustive(&values, &probs).is_none() {
+                n_none += 1;
+            }
+        }
+        assert!(n_none>0);
     }
 
     #[test]

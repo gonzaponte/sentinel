@@ -7,7 +7,7 @@ use hdf5_metno as hdf5;
 
 use crate::io::read_hdf5;
 use crate::io::hdf5_types::{S1LightTablePoint, S2LightTablePoint, DriftMapPoint};
-use crate::random::{exp_survival_n, choice};
+use crate::random::{exp_survival_n, choice_nonexhaustive};
 
 pub struct LTprob {
     pub sensor_id: u16,
@@ -134,7 +134,7 @@ impl DriftTable {
 
         let n = exp_survival_n(*t_ave, tau, n);
 
-        let points = (0..n).map(|_| choice(&points, &probs))
+        let points = (0..n).filter_map(|_| choice_nonexhaustive(&points, &probs))
                            .map(|xy| rot * xy)
                            .collect();
         (points, *t_ave)
