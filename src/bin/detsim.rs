@@ -25,17 +25,11 @@ struct CLI {
     #[arg(short, long)]
     output: String,
 
-    #[arg(short, long, value_enum, default_value_t=Medium::Xenon)]
+    #[arg(long, value_enum, default_value_t=Medium::Xenon)]
     medium: Medium,
 
-    #[arg(long)]
-    s1: String,
-
-    #[arg(long)]
-    s2: String,
-
-    #[arg(long)]
-    drift: String,
+    #[arg(short, long)]
+    maps: String,
 
     #[arg(short, long)]
     lifetime: f64,
@@ -59,9 +53,9 @@ pub fn main() -> Result<()> {
         return invalid_input!("Outfile already exists!");
     }
 
-    let s1_lt = S1LightTable::from_file(&args.s1)?;
-    let s2_lt = S2LightTable::from_file(&args.s2)?;
-    let drift =   DriftTable::from_file(&args.drift)?;
+    let s1_lt = S1LightTable::from_file(&args.maps)?;
+    let s2_lt = S2LightTable::from_file(&args.maps)?;
+    let drift =   DriftTable::from_file(&args.maps)?;
 
     let (fractions, constants) = args.medium.time_constants();
 
