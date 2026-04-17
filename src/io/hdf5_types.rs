@@ -75,5 +75,5 @@ pub struct DriftMapPoint {
     pub n_dst: u32,
     pub n_src: u32,
     pub t_ave: f32,
-    pub ok   : bool,
+    pub ok   : u8,
 }
