@@ -26,10 +26,10 @@ impl Medium {
         }
     }
 
-    //                              fractions, constants
+    //                   cumulative fractions, constants
     pub fn time_constants(&self) -> (Vec<f64>, Vec<f64>) {
         match self {
-            Medium::Xenon   => (vec![0.03, 0.97], vec![2.0, 42.5]),
+            Medium::Xenon   => (vec![0.03, 1.00], vec![2.0, 42.5]),
             Medium::Argon   => unimplemented!(),
             Medium::Krypton => unimplemented!(),
         }
