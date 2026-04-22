@@ -73,7 +73,7 @@ pub fn main() -> Result<()> {
     let (fractions, constants) = args.medium.time_constants();
 
     let ofile  = hdf5::File::create(&path.to_str().unwrap()).unwrap();
-    let writer = Hdf5Writer::<SensorHit>::new(Rc::new(ofile), "sensor_hits", 1024).unwrap();
+    let writer = Hdf5Writer::<SensorHit>::new(Rc::new(ofile), "/MC/sensor_hits", 1024).unwrap();
 
     println!("Initialization time: {:?}", timer.elapsed().as_secs_f64());
 
