@@ -6,18 +6,26 @@ use std::time::Instant;
 use clap::Parser;
 use rayon::prelude::*;
 use hdf5_metno as hdf5;
+use nalgebra::point;
 
+use sentinel::configure::Configure;
+use sentinel::field::Field;
+use sentinel::geometry::Cone;
 use sentinel::invalid_input;
 use sentinel::io::{Writer, Hdf5Writer, read_hdf5};
 use sentinel::io::hdf5_types::{IonizationHit, SensorHit};
-use sentinel::lt::{S1LightTable, S2LightTable, DriftTable};
+use sentinel::lt::{S1LightTable, S2LightTable};
 use sentinel::medium::Medium;
 use sentinel::progress::MaybeProgressBar;
-use sentinel::random::{poisson, multiexpo, normal, uniform};
+use sentinel::random::{poisson, multiexpo, normal, uniform, exp_survival};
+use sentinel::tracker::Tracker;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct CLI {
+
+    #[arg(short, long)]
+    conf: String,
 
     #[arg(short, long)]
     input: String,
@@ -48,6 +56,7 @@ pub fn main() -> Result<()> {
     let timer = Instant::now();
 
     let args = CLI::parse();
+    let conf = Configure::new(&args.conf).unwrap();
     let path = Path::new(&args.output);
     if path.exists() & !args.overwrite {
         return invalid_input!("Outfile already exists!");
@@ -55,7 +64,11 @@ pub fn main() -> Result<()> {
 
     let s1_lt = S1LightTable::from_file(&args.maps)?;
     let s2_lt = S2LightTable::from_file(&args.maps)?;
-    let drift =   DriftTable::from_file(&args.maps)?;
+//    let drift =   DriftTable::from_file(&args.maps)?;
+//
+    let geometry   = Cone::new(conf.rmin, conf.form_factor, conf.zmax);
+    let field      = Field::from_file(&conf.field_file, conf.field_to_mm, conf.field_to_Vpercm, true);
+    let tracker    = Tracker::new(field, geometry.clone(), conf.t_step);
 
     let (fractions, constants) = args.medium.time_constants();
 
@@ -97,12 +110,23 @@ pub fn main() -> Result<()> {
         ihits.into_par_iter()
              .flat_map_iter(|ihit| {
                  pb.inc(1);
-                 let event                = ihit.event;
-                 let n_ave                = ihit.e as f64 * 1e6 / args.medium.w_i(); // hits come in MeV, w_i is in eV
-                 let n_ie                 = poisson(n_ave);
-                 let (endpoints, ie_time) = drift.get(ihit.z, ihit.x, ihit.y, n_ie, args.lifetime);
-
-                 endpoints.into_iter().map(move |ep| (event, ie_time, ep))
+                 let event  = ihit.event;
+                 let n_ave  = ihit.e as f64 * 1e6 / args.medium.w_i(); // hits come in MeV, w_i is in eV
+                 let n_ie   = poisson(n_ave);
+                 let origin = point![ihit.x as f64, ihit.y as f64, ihit.z as f64];
+                 (0..n_ie).map(move |_| origin.clone())
+                          .map(|origin| tracker.propagate_from(origin))
+                          .filter_map(move |trajectory| {
+                              let tdrift   = trajectory.len() as f64 * conf.t_step;
+                              let last     = trajectory.last().unwrap();
+                              let endpoint = point![last.x as f32, last.y as f32, last.z as f32];
+                              if exp_survival(tdrift, args.lifetime) {
+                                  Some((event, tdrift, endpoint))
+                              }
+                              else {
+                                  None
+                              }
+                          })
              })
              .flat_map_iter(|(evt, ie_time, ep)| {
                  // HACK: smear arrival time by a tiny bit to emulate diffusion
