@@ -4,9 +4,10 @@ use std::rc::Rc;
 use std::time::Instant;
 
 use clap::Parser;
-use rayon::prelude::*;
+use itertools::Itertools;
 use hdf5_metno as hdf5;
 use nalgebra::point;
+use rayon::prelude::*;
 
 use sentinel::configure::Configure;
 use sentinel::field::Field;
@@ -17,7 +18,7 @@ use sentinel::io::hdf5_types::{IonizationHit, SensorHit};
 use sentinel::lt::{S1LightTable, S2LightTable};
 use sentinel::medium::Medium;
 use sentinel::progress::MaybeProgressBar;
-use sentinel::random::{poisson, multiexpo, normal, uniform, exp_survival};
+use sentinel::random::{poisson, multiexpo, uniform, exp_survival};
 use sentinel::tracker::Tracker;
 
 #[derive(Parser, Debug)]
@@ -76,85 +77,89 @@ pub fn main() -> Result<()> {
 
     println!("Initialization time: {:?}", timer.elapsed().as_secs_f64());
 
-    let ihits   = read_hdf5::<IonizationHit>(&args.input, "/MC/ionization_hits")?;
-    let n_ihits = ihits.len();
+    let events = read_hdf5::<IonizationHit>(&args.input, "/MC/ionization_hits")?
+        .into_iter()
+        .chunk_by(|sh| sh.event)
+        .into_iter()
+        .map(|(_, shs)| shs.collect::<Vec<IonizationHit>>())
+        .collect::<Vec<Vec<IonizationHit>>>();
 
-    let pb = MaybeProgressBar::new(ihits.len(), args.batch);
+    let n_evt = events.len();
+
+    let pb = MaybeProgressBar::new(n_evt, args.batch);
 
     rayon::ThreadPoolBuilder::new().num_threads(args.threads).build_global().unwrap();
 
     let timer = Instant::now();
 
+    for ihits in events.into_iter() {
+        let mut sensor_hits : Vec<SensorHit> =
+            ihits.par_iter()
+                 .flat_map_iter(|ihit| {
+                     let event = ihit.event;
+                     let n_ave = ihit.e as f64 * 1e6 / args.medium.w_s();// hits come in MeV, w_s is in eV
+                     let n_ph  = poisson(n_ave) as f64;
+                     s1_lt.get(ihit.z, ihit.x, ihit.y)
+                          .iter()
+                          .map(move |p| (p.sensor_id, poisson(p.prob*n_ph)))
+                          .filter(|(_, n)| *n>0)
+                          .flat_map(move |(sid, n)| (0..n).map(move |_| (event, sid)))
+                 })
+                 .map(|(event, sensor_id)| {
+                     let t = multiexpo(&fractions, &constants);
+                     SensorHit{event, sensor_id, t: t as f32}
+                 })
+                 .collect();
 
-    let mut sensor_hits : Vec<SensorHit> =
-        ihits.par_iter()
-             .flat_map_iter(|ihit| {
-                 pb.inc(1);
-                 let event = ihit.event;
-                 let n_ave = ihit.e as f64 * 1e6 / args.medium.w_s();// hits come in MeV, w_s is in eV
-                 let n_ph  = poisson(n_ave) as f64;
-                 s1_lt.get(ihit.z, ihit.x, ihit.y)
-                      .iter()
-                      .map(move |p| (p.sensor_id, poisson(p.prob*n_ph)))
-                      .filter(|(_, n)| *n>0)
-                      .flat_map(move |(sid, n)| (0..n).map(move |_| (event, sid)))
-             })
-             .map(|(event, sensor_id)| {
-                 let t = multiexpo(&fractions, &constants);
-                 SensorHit{event, sensor_id, t: t as f32}
-             })
-             .collect();
+        let mut s2_sensor_hits : Vec<SensorHit> =
+            ihits.into_par_iter()
+                 .flat_map_iter(|ihit| {
+                     let event  = ihit.event;
+                     let n_ave  = ihit.e as f64 * 1e6 / args.medium.w_i(); // hits come in MeV, w_i is in eV
+                     let n_ie   = poisson(n_ave);
+                     let origin = point![ihit.x as f64, ihit.y as f64, ihit.z as f64];
+                     (0..n_ie).map(move |_| origin.clone())
+                              .map(|origin| tracker.propagate_from(origin))
+                              .filter_map(move |trajectory| {
+                                  let tdrift   = trajectory.len() as f64 * conf.t_step;
+                                  let last     = trajectory.last().unwrap();
+                                  let endpoint = point![last.x as f32, last.y as f32, last.z as f32];
+                                  if exp_survival(tdrift, args.lifetime) {
+                                      Some((event, tdrift, endpoint))
+                                  }
+                                  else {
+                                      None
+                                  }
+                              })
+                 })
+                 .flat_map_iter(|(evt, ie_time, ep)| {
+                     s2_lt.get(ep.x, ep.y)
+                          .iter()
+                          .map(|p| (p.sensor_id, poisson(p.prob*args.medium.light_yield())))
+                          .filter(|(_, n)| *n>0)
+                          .flat_map(move |(sid, n)| (0..n).map(move |_| (evt, ie_time, sid)))
+                 })
+                 .map(|(event, ie_time, sensor_id)| {
+                     // HACK: uniform emission in time within el emission range
+                     let t = ie_time + uniform(0.0, 0.1) + multiexpo(&fractions, &constants);
+                     SensorHit{event, sensor_id, t: t as f32}
+                 })
+                 .collect();
 
-    let mut s2_sensor_hits : Vec<SensorHit> =
-        ihits.into_par_iter()
-             .flat_map_iter(|ihit| {
-                 pb.inc(1);
-                 let event  = ihit.event;
-                 let n_ave  = ihit.e as f64 * 1e6 / args.medium.w_i(); // hits come in MeV, w_i is in eV
-                 let n_ie   = poisson(n_ave);
-                 let origin = point![ihit.x as f64, ihit.y as f64, ihit.z as f64];
-                 (0..n_ie).map(move |_| origin.clone())
-                          .map(|origin| tracker.propagate_from(origin))
-                          .filter_map(move |trajectory| {
-                              let tdrift   = trajectory.len() as f64 * conf.t_step;
-                              let last     = trajectory.last().unwrap();
-                              let endpoint = point![last.x as f32, last.y as f32, last.z as f32];
-                              if exp_survival(tdrift, args.lifetime) {
-                                  Some((event, tdrift, endpoint))
-                              }
-                              else {
-                                  None
-                              }
-                          })
-             })
-             .flat_map_iter(|(evt, ie_time, ep)| {
-                 // HACK: smear arrival time by a tiny bit to emulate diffusion
-                 let ie_time_diff = normal(ie_time, 10.0);
-                 s2_lt.get(ep.x, ep.y)
-                      .iter()
-                      .map(|p| (p.sensor_id, poisson(p.prob*args.medium.light_yield())))
-                      .filter(|(_, n)| *n>0)
-                      .flat_map(move |(sid, n)| (0..n).map(move |_| (evt, ie_time_diff, sid)))
-             })
-             .map(|(event, ie_time_diff, sensor_id)| {
-                 // HACK: uniform emission in time within el emission range
-                 let t = ie_time_diff + uniform(0.0, 100.0) + multiexpo(&fractions, &constants);
-                 SensorHit{event, sensor_id, t: t as f32}
-             })
-             .collect();
+        sensor_hits.append(&mut s2_sensor_hits);
+        sensor_hits.sort_by(|a, b| b.event.cmp(&a.event));
+        writer.write_many(sensor_hits)?;
 
+        pb.inc(1);
+    }
     pb.finish();
 
-    sensor_hits.append(&mut s2_sensor_hits);
-    sensor_hits.sort_by(|a, b| b.event.cmp(&a.event));
-    writer.write_many(sensor_hits)?;
-
     let exe_time = timer.elapsed().as_secs_f64();
-    println!( "Execution time for {} ihits: {:.2} s => {:.1} ihit/s or {:.8} s/ihit"
-            , n_ihits
+    println!( "Execution time for {} events: {:.2} s => {:.1} event/s or {:.8} s/event"
+            , n_evt
             , exe_time
-            , n_ihits as f64 / exe_time
-            , exe_time / n_ihits as f64
+            , n_evt as f64 / exe_time
+            , exe_time / n_evt as f64
             );
     Ok(())
 }
