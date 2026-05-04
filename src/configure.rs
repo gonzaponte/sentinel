@@ -8,7 +8,8 @@ use crate::generator::Generator;
 pub struct Configure {
     pub rmin           : f64,
     pub form_factor    : f64,
-    pub zmax           : f64,
+    pub  neck_length   : f64,
+    pub drift_length   : f64,
     pub field_file     : String,
     pub field_to_mm    : f64,
     pub field_to_Vpercm: f64,
@@ -44,7 +45,8 @@ mod tests {
         assert_float_eq!(c.field_to_mm    ,  1.0, ulps<=2);
         assert_float_eq!(c.field_to_Vpercm,  1e3, ulps<=2);
         assert!         (c.field_invert_z );
-        assert_float_eq!(c.zmax           , 10.0, ulps<=2);
+        assert_float_eq!(c. neck_length   ,  1.0, ulps<=2);
+        assert_float_eq!(c.drift_length   , 10.0, ulps<=2);
         assert_float_eq!(c.t_step         , 1e-4, ulps<=2);
 
         assert!         (c.generator == Generator::FixedPos(0., 0., 9.));

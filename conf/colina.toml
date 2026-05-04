@@ -1,6 +1,7 @@
-rmin        =  32.0
-form_factor =   1.0
-zmax        = 240.0
+rmin         =  32.0
+form_factor  =   1.0
+neck_length  =  10.0
+drift_length = 240.0
 
 field_file = "/home/gonzalo/data/COLINA/comsol/COLINA_triangular_efield_ring_degrad_4_form_factor_1.txt"
 

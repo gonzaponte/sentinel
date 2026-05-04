@@ -1,6 +1,7 @@
-rmin        =  1.0
-form_factor =  1.0
-zmax        = 10.0
+rmin         =  1.0
+form_factor  =  1.0
+neck_length  =  1.0
+drift_length = 10.0
 
 field_file = "data/homogeneous_field.dat"
 

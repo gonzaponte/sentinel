@@ -1,6 +1,7 @@
-rmin        =  16.0
-form_factor =   1.0
-zmax        = 120.0
+rmin         =  16.0
+form_factor  =   1.0
+neck_length  =  10.0
+drift_length = 120.0
 
 field_file = "/home/gonzalo/data/COLINA/comsol/pCOLINA_triangular_efield_ring_degrad_4.5_form_factor_1.txt"
 
@@ -13,4 +14,4 @@ field_invert_z = true
 
 #generator = "Volume"
 #generator = { Plane = 0.0 }
-generator = {FromFile = "data/kr_hits.h5"}
+generator = {FromFile = "../cosine/fe55.h5"}
