@@ -12,4 +12,6 @@ field_to_Vpercm = 1000.0
 
 field_invert_z = true
 
+lifetime = 123
+
 generator = { FixedPos = [0.0, 0.0, 9.0] }

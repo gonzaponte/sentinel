@@ -7,7 +7,7 @@ use clap::Parser;
 use rayon::prelude::*;
 use hdf5_metno as hdf5;
 
-use sentinel::configure::Configure;
+use sentinel::configure::trajectories::Configure;
 use sentinel::geometry::Cone;
 use sentinel::field::Field;
 use sentinel::tracker::Tracker;

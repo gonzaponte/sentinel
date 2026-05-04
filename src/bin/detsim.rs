@@ -9,7 +9,7 @@ use hdf5_metno as hdf5;
 use nalgebra::point;
 use rayon::prelude::*;
 
-use sentinel::configure::Configure;
+use sentinel::configure::detsim::Configure;
 use sentinel::field::Field;
 use sentinel::geometry::Cone;
 use sentinel::invalid_input;
@@ -39,9 +39,6 @@ struct CLI {
 
     #[arg(short, long)]
     maps: String,
-
-    #[arg(short, long)]
-    lifetime: f64,
 
     #[arg(long, default_value_t=false)]
     overwrite: bool,
@@ -124,7 +121,7 @@ pub fn main() -> Result<()> {
                                   let tdrift   = trajectory.len() as f64 * conf.t_step;
                                   let last     = trajectory.last().unwrap();
                                   let endpoint = point![last.x as f32, last.y as f32, last.z as f32];
-                                  if exp_survival(tdrift, args.lifetime) {
+                                  if exp_survival(tdrift, conf.lifetime) {
                                       Some((event, tdrift, endpoint))
                                   }
                                   else {

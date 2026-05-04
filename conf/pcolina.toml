@@ -12,6 +12,8 @@ field_to_Vpercm = 0.01
 
 field_invert_z = true
 
-#generator = "Volume"
+generator = "Volume"
 #generator = { Plane = 0.0 }
-generator = {FromFile = "../cosine/fe55.h5"}
+#generator = {FromFile = "../cosine/fe55.h5"}
+
+lifetime = 50000 # mus
