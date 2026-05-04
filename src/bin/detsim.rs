@@ -66,7 +66,7 @@ pub fn main() -> Result<()> {
     let s2_lt = S2LightTable::from_file(&args.maps)?;
 
     let geometry = Cone::new(conf.rmin, conf.form_factor, conf.neck_length, conf.drift_length);
-    let field    = Field::from_file(&conf.field_file, conf.field_to_mm, conf.field_to_Vpercm, true);
+    let field    = Field::from_file(&conf.field_file, conf.field_to_mm, conf.field_to_Vpercm, conf.neck_length, true);
     let tracker  = Tracker::new(field, geometry.clone(), conf.t_step);
 
     let (fractions, constants) = args.medium.time_constants();
