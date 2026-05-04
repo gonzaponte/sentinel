@@ -106,7 +106,7 @@ mod tests {
         ];
         Field::new(points)
     }
-    fn default_geometry() -> Cone          { Cone::new(1., 1., 10.) }
+    fn default_geometry() -> Cone          { Cone::new(1., 1., 1.0, 10.) }
     fn default_tracker () -> Tracker<Cone> { Tracker ::new(homogeneous_field(), default_geometry(), 1.) }
 
     #[test]
