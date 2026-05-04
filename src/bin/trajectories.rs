@@ -70,7 +70,7 @@ pub fn main() -> Result<()> {
             Box::new(Hdf5Writer::<TrajectoryPoint>::new(Rc::new(file), "trajectories", 1024).unwrap())
         };
 
-    let geometry   = Cone::new(conf.rmin, conf.form_factor, conf.zmax);
+    let geometry   = Cone::new(conf.rmin, conf.form_factor, conf.neck_length, conf.drift_length);
     let field      = Field::from_file(&conf.field_file, conf.field_to_mm, conf.field_to_Vpercm, true);
     let tracker    = Tracker::new(field, geometry.clone(), conf.t_step);
     let sampler    = conf.generator.sampler(&geometry);
