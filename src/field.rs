@@ -24,7 +24,7 @@ impl Field {
     }
 
     #[allow(non_snake_case)]
-    pub fn from_file(filename: &str, to_mm: f64, to_Vpercm: f64, invert_z: bool) -> Self {
+    pub fn from_file(filename: &str, to_mm: f64, to_Vpercm: f64, offset_z: f64, invert_z: bool) -> Self {
         let data = read_csv(filename, " ", 8).expect("Could not read field file");
 
         let mut previous_pos  = Point2::<f64>::origin();
@@ -35,7 +35,7 @@ impl Field {
             data.into_iter()
                 .rev()
                 .map(|row| vec![ row[0] * to_mm
-                               , row[1] * to_mm * sign
+                               , row[1] * to_mm * sign + offset_z
                                , row[2]
                                , row[3] * to_Vpercm
                 ])
@@ -75,7 +75,7 @@ mod tests {
         writeln!(file, "1.2 -14.5 6 7.89").unwrap();       // repeat the same values
         writeln!(file, "1.2  -4.5 6 7.89").unwrap();       // the actual rows
 
-        let field = Field::from_file(file.path().to_str().unwrap(), 1., 1., true);
+        let field = Field::from_file(file.path().to_str().unwrap(), 1., 1., 0., true);
 
         assert_eq!(field.field_points.len(), 2); // first one is skipped for being the end of the line
 
